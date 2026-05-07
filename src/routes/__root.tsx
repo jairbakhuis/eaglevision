@@ -74,14 +74,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "eaglevision" },
+      { name: "description", content: "Your AI Companion Hub is a unified platform for interacting with AI assistants and managing tasks." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "eaglevision" },
+      { property: "og:description", content: "Your AI Companion Hub is a unified platform for interacting with AI assistants and managing tasks." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "eaglevision" },
+      { name: "twitter:description", content: "Your AI Companion Hub is a unified platform for interacting with AI assistants and managing tasks." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ebdd9f15-4ed8-4221-aa56-c2f8b19b118f/id-preview-c690249b--b1f71f59-aca2-495b-b4dc-dae30b53d40c.lovable.app-1778121102690.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ebdd9f15-4ed8-4221-aa56-c2f8b19b118f/id-preview-c690249b--b1f71f59-aca2-495b-b4dc-dae30b53d40c.lovable.app-1778121102690.png" },
     ],
     links: [
       {
