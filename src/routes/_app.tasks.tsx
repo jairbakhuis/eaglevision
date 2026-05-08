@@ -1493,3 +1493,188 @@ function RecurrenceField({
     </div>
   );
 }
+
+// ─── Filter editor dialog ────────────────────────────────────────────────
+
+const FILTER_COLORS = [
+  "#8b5cf6", "#ef4444", "#f59e0b", "#10b981",
+  "#3b82f6", "#ec4899", "#14b8a6", "#6366f1",
+];
+
+const FILTER_EXAMPLES: { label: string; query: string }[] = [
+  { label: "Today + P1", query: "today & p1" },
+  { label: "Overdue", query: "overdue" },
+  { label: "No date", query: "no-date & open" },
+  { label: "This week (P1 or P2)", query: "7d & (p1 | p2)" },
+  { label: "@home & open", query: "@home & open" },
+];
+
+function FilterEditor({
+  state,
+  tasks,
+  projects,
+  onClose,
+  onSave,
+}: {
+  state: SavedFilter | { isNew: true } | null;
+  tasks: Task[];
+  projects: Project[];
+  onClose: () => void;
+  onSave: (p: { id?: string; name: string; query: string; color: string }) => void;
+}) {
+  const isEditing = state && "id" in state;
+  const [name, setName] = useState("");
+  const [query, setQuery] = useState("");
+  const [color, setColor] = useState(FILTER_COLORS[0]);
+
+  useEffect(() => {
+    if (!state) return;
+    if ("id" in state) {
+      setName(state.name);
+      setQuery(state.query);
+      setColor(state.color);
+    } else {
+      setName("");
+      setQuery("");
+      setColor(FILTER_COLORS[0]);
+    }
+  }, [state]);
+
+  const validation = useMemo(() => validateQuery(query), [query]);
+  const chips = useMemo(() => describeQuery(query), [query]);
+  const preview = useMemo(() => {
+    if (!validation.ok) return [];
+    const pred = compileFilter(query);
+    return tasks
+      .filter((t) => !t.parent_task_id)
+      .filter((t) => pred(t as any, projects))
+      .slice(0, 5);
+  }, [query, tasks, projects, validation]);
+  const matchCount = useMemo(() => {
+    if (!validation.ok) return 0;
+    const pred = compileFilter(query);
+    return tasks.filter((t) => !t.parent_task_id).filter((t) => pred(t as any, projects)).length;
+  }, [query, tasks, projects, validation]);
+
+  if (!state) return null;
+
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg" data-no-swipe>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? "Edit filter" : "New filter"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Filter name"
+            autoFocus
+          />
+          <div>
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. today & p1"
+              className="font-mono text-sm"
+            />
+            {chips.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {chips.map((c, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "rounded-md px-1.5 py-0.5 text-xs font-medium",
+                      c.type === "priority" && "bg-red-500/15 text-red-600 dark:text-red-400",
+                      c.type === "project" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                      c.type === "label" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                      c.type === "keyword" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                      c.type === "op" && "bg-muted text-muted-foreground",
+                      c.type === "text" && "bg-muted",
+                    )}
+                  >
+                    {c.text}
+                  </span>
+                ))}
+              </div>
+            )}
+            {!validation.ok && (
+              <p className="mt-1 text-xs text-red-500">{validation.error}</p>
+            )}
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">Examples</p>
+            <div className="flex flex-wrap gap-1.5">
+              {FILTER_EXAMPLES.map((ex) => (
+                <button
+                  key={ex.query}
+                  type="button"
+                  onClick={() => { setQuery(ex.query); if (!name) setName(ex.label); }}
+                  className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-accent"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Color</span>
+            {FILTER_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={cn(
+                  "h-6 w-6 rounded-full border-2",
+                  color === c ? "border-foreground" : "border-transparent",
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+
+          <div className="rounded-md border border-border bg-muted/30 p-2">
+            <p className="mb-1 text-xs text-muted-foreground">
+              {validation.ok ? `${matchCount} match${matchCount === 1 ? "" : "es"}` : "—"}
+            </p>
+            <ul className="space-y-0.5 text-sm">
+              {preview.map((t) => (
+                <li key={t.id} className="truncate">
+                  • {t.title}
+                </li>
+              ))}
+              {validation.ok && preview.length === 0 && (
+                <li className="text-xs text-muted-foreground">No tasks match.</li>
+              )}
+            </ul>
+          </div>
+
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer">Query syntax</summary>
+            <div className="mt-1 space-y-0.5">
+              <div><code>today</code>, <code>overdue</code>, <code>upcoming</code>, <code>no-date</code>, <code>inbox</code>, <code>done</code>, <code>open</code></div>
+              <div><code>p1</code>..<code>p4</code> priority · <code>#project</code> · <code>@label</code></div>
+              <div><code>7d</code> = next 7 days · combine with <code>&amp;</code>, <code>|</code>, <code>!</code>, parens</div>
+            </div>
+          </details>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => onSave({
+              id: isEditing ? (state as SavedFilter).id : undefined,
+              name: name.trim() || "Untitled filter",
+              query,
+              color,
+            })}
+            disabled={!name.trim() || !validation.ok}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
