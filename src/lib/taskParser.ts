@@ -1,6 +1,5 @@
 import * as chrono from "chrono-node";
-import pkg from "rrule";
-const { RRule, Frequency } = pkg;
+import { RRule, Frequency } from "rrule";
 type RRuleInstance = InstanceType<typeof RRule>;
 
 export type ParsedTask = {
