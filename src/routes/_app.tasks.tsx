@@ -68,7 +68,8 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
-import { RRule } from "rrule";
+import pkg from "rrule";
+const { RRule } = pkg;
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil } from "lucide-react";
 
