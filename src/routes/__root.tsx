@@ -73,7 +73,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "EagleVision" },
+      { name: "theme-color", content: "#0e0c0a" },
       { title: "eaglevision" },
       { name: "description", content: "Your AI Companion Hub is a unified platform for interacting with AI assistants and managing tasks." },
       { name: "author", content: "Lovable" },
