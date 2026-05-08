@@ -15,6 +15,7 @@ import {
   FileText,
   Eye,
   Pencil,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [treeOpen, setTreeOpen] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -76,12 +78,24 @@ function DocumentsPage() {
     });
   }
 
+  async function requireUserId() {
+    if (userId) return userId;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      toast.error("Sign in to create documents.");
+      return null;
+    }
+    setUserId(data.user.id);
+    return data.user.id;
+  }
+
   async function createPage(parentId: string | null) {
-    if (!userId) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("pages")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: "Untitled",
         content: "",
         parent_id: parentId,
@@ -101,6 +115,8 @@ function DocumentsPage() {
     }
     setActiveId(page.id);
     setMode("edit");
+    setTreeOpen(false);
+    toast.success(parentId ? "Sub-page created" : "Document created");
   }
 
   function collectDescendants(rootId: string): string[] {
@@ -142,9 +158,14 @@ function DocumentsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] w-full">
+    <div className="flex min-h-[calc(100svh-64px)] w-full md:h-[calc(100vh-3rem)] md:min-h-0">
       {/* Tree pane */}
-      <aside className="flex w-72 flex-col border-r border-border bg-muted/20">
+      <aside
+        className={cn(
+          "w-full flex-col border-r border-border bg-muted/20 md:flex md:w-72",
+          treeOpen ? "flex" : "hidden",
+        )}
+      >
         <div className="flex items-center justify-between gap-2 border-b border-border p-3">
           <h2 className="text-sm font-semibold">Documents</h2>
           <Button size="sm" onClick={() => createPage(null)} className="h-8 gap-1">
@@ -173,6 +194,7 @@ function DocumentsPage() {
                   onSelect={(id) => {
                     setActiveId(id);
                     setMode("edit");
+                    setTreeOpen(false);
                   }}
                   onToggleCollapse={toggleCollapse}
                   onAddChild={(parentId) => createPage(parentId)}
@@ -185,7 +207,16 @@ function DocumentsPage() {
       </aside>
 
       {/* Editor pane */}
-      <section className="flex flex-1 flex-col">
+      <section className={cn("flex flex-1 flex-col", treeOpen && "hidden md:flex")}>
+        <div className="flex items-center justify-between border-b border-border p-3 md:hidden">
+          <Button size="icon" variant="ghost" onClick={() => setTreeOpen(true)} aria-label="Open documents">
+            <Menu className="h-5 w-5" />
+          </Button>
+          <span className="max-w-[180px] truncate text-sm font-semibold">{active?.title || "Documents"}</span>
+          <Button size="icon" variant="ghost" onClick={() => createPage(null)} aria-label="New document">
+            <Plus className="h-5 w-5" />
+          </Button>
+        </div>
         {!active ? (
           <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
             <FileText className="mb-3 h-10 w-10 opacity-40" />

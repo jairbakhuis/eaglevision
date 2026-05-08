@@ -251,6 +251,7 @@ function TasksPage() {
       .single();
     if (error) return toast.error(error.message);
     setTasks((t) => [...t, data as Task]);
+    toast.success("Task created");
   }
 
   async function addSubtask(parent: Task, title: string) {
@@ -272,6 +273,7 @@ function TasksPage() {
       .single();
     if (error) return toast.error(error.message);
     setTasks((t) => [...t, data as Task]);
+    toast.success("Subtask created");
   }
 
   async function toggleDone(task: Task) {
@@ -315,6 +317,7 @@ function TasksPage() {
     setNewProjectName("");
     setNewProjectOpen(false);
     setFilter({ kind: "project", id: data.id });
+    toast.success("Project created");
   }
 
   async function deleteProject(id: string) {
@@ -348,7 +351,7 @@ function TasksPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)]">
+    <div className="flex min-h-[calc(100svh-64px)] md:h-[calc(100vh-3rem)] md:min-h-0">
       {/* Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/40 p-3 md:flex">
         <div className="space-y-0.5">
@@ -518,18 +521,24 @@ function TasksPage() {
           </div>
 
           {/* Quick add */}
-          <div className="mb-4 flex gap-2">
+          <form
+            data-no-swipe
+            className="mb-4 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              addQuick();
+            }}
+          >
             <Input
               value={quickAdd}
               onChange={(e) => setQuickAdd(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addQuick()}
-              placeholder="Add a task and press Enter…"
+              placeholder="Add a task…"
               className="flex-1"
             />
-            <Button onClick={addQuick} disabled={authLoading}>
+            <Button type="submit" disabled={authLoading || !quickAdd.trim()}>
               <Plus className="h-4 w-4" />
             </Button>
-          </div>
+          </form>
 
           {/* Body */}
           {view === "list" ? (
@@ -562,36 +571,44 @@ function TasksPage() {
 
       {/* New project dialog */}
       <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New project</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={newProjectName}
-            onChange={(e) => setNewProjectName(e.target.value)}
-            placeholder="Project name"
-            onKeyDown={(e) => e.key === "Enter" && createProject()}
-            autoFocus
-          />
-          <div className="flex flex-wrap gap-2">
-            {PROJECT_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setNewProjectColor(c)}
-                className={cn(
-                  "h-7 w-7 rounded-full border-2 transition",
-                  newProjectColor === c ? "border-foreground" : "border-transparent",
-                )}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewProjectOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={createProject}>Create</Button>
-          </DialogFooter>
+        <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl sm:rounded-lg" data-no-swipe>
+          <form
+            className="contents"
+            onSubmit={(e) => {
+              e.preventDefault();
+              createProject();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>New project</DialogTitle>
+            </DialogHeader>
+            <Input
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              placeholder="Project name"
+              autoFocus
+            />
+            <div className="flex flex-wrap gap-2">
+              {PROJECT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewProjectColor(c)}
+                  className={cn(
+                    "h-9 w-9 rounded-full border-2 transition md:h-7 md:w-7",
+                    newProjectColor === c ? "border-foreground" : "border-transparent",
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setNewProjectOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!newProjectName.trim()}>Create</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -842,24 +859,24 @@ function TaskRow({
           )}
         </div>
       </div>
-      <button
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 transition group-hover:opacity-100"
-      >
-        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-      </button>
       {!isSubtask && onAddSubtask && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onAddSubtask();
           }}
-          className="opacity-0 transition group-hover:opacity-100"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:h-auto md:w-auto md:opacity-0 md:group-hover:opacity-100"
           title="Add subtask"
         >
           <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
         </button>
       )}
+      <button
+        onClick={() => onDelete(task.id)}
+        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive md:h-auto md:w-auto md:opacity-0 md:group-hover:opacity-100"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
