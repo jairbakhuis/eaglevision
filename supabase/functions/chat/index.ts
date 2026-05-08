@@ -172,8 +172,7 @@ Conventions:
 - Subtasks: pass parent_task_id when adding child tasks. Use find_task first if you don't know the parent's id.
 - "today"=${today}, "tomorrow"=next day, "next week"=coming Monday. Always pass ISO dates.
 - Don't ask "are you sure?" for creates. Do ask before bulk delete or overwriting existing content.
-- If a tool errors, tell Jair plainly. Don't loop on the same failing call.`;
- + `
+- If a tool errors, tell Jair plainly. Don't loop on the same failing call.
 
 Destructive operations:
 - For ANY delete (delete_task, delete_note, delete_page, delete_project) and for content-overwriting updates (update_note, update_page when "content" is being replaced), STOP and ask Jair for explicit confirmation in plain text BEFORE calling the tool. Show what you're about to delete/replace. Wait for "yes" or equivalent.
