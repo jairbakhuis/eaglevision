@@ -13,8 +13,8 @@ const DEFAULT_MODEL = "openai/gpt-5-mini";
 const MAX_TOOL_ITERATIONS = 8;
 
 const TOOLS = [
-  { type: "function", function: { name: "create_task", description: "Create a task. project_id optional (omit=inbox). parent_task_id makes it a subtask. priority 1=urgent..4=low.", parameters: { type: "object", properties: { title: { type: "string" }, project_id: { type: "string" }, parent_task_id: { type: "string" }, description: { type: "string" }, priority: { type: "integer", minimum: 1, maximum: 4 }, due_date: { type: "string" }, tags: { type: "array", items: { type: "string" } } }, required: ["title"] } } },
-  { type: "function", function: { name: "update_task", description: "Update task fields. Pass only fields to change. status='done' marks complete.", parameters: { type: "object", properties: { task_id: { type: "string" }, title: { type: "string" }, description: { type: "string" }, status: { type: "string", enum: ["todo","in_progress","done"] }, priority: { type: "integer", minimum: 1, maximum: 4 }, due_date: { type: "string" }, project_id: { type: "string" }, parent_task_id: { type: "string" }, tags: { type: "array", items: { type: "string" } } }, required: ["task_id"] } } },
+  { type: "function", function: { name: "create_task", description: "Create a task. project_id optional (omit=inbox). parent_task_id makes it a subtask. priority 1=urgent..4=low. rrule = RFC 5545 recurrence string for repeating tasks (e.g. 'FREQ=MONTHLY' for monthly, 'FREQ=WEEKLY;BYDAY=MO' for every Monday, 'FREQ=DAILY' for daily). When rrule is set, due_date should be the FIRST occurrence.", parameters: { type: "object", properties: { title: { type: "string" }, project_id: { type: "string" }, parent_task_id: { type: "string" }, description: { type: "string" }, priority: { type: "integer", minimum: 1, maximum: 4 }, due_date: { type: "string" }, rrule: { type: "string" }, tags: { type: "array", items: { type: "string" } } }, required: ["title"] } } },
+  { type: "function", function: { name: "update_task", description: "Update task fields. Pass only fields to change. status='done' marks complete. rrule sets/changes recurrence (RFC 5545).", parameters: { type: "object", properties: { task_id: { type: "string" }, title: { type: "string" }, description: { type: "string" }, status: { type: "string", enum: ["todo","in_progress","done"] }, priority: { type: "integer", minimum: 1, maximum: 4 }, due_date: { type: "string" }, rrule: { type: "string" }, project_id: { type: "string" }, parent_task_id: { type: "string" }, tags: { type: "array", items: { type: "string" } } }, required: ["task_id"] } } },
   { type: "function", function: { name: "list_tasks", description: "List tasks with optional filters. Up to 50.", parameters: { type: "object", properties: { project_id: { type: "string" }, parent_task_id: { type: "string" }, status: { type: "string", enum: ["todo","in_progress","done"] }, due_before: { type: "string" }, due_after: { type: "string" }, inbox_only: { type: "boolean" } } } } },
   { type: "function", function: { name: "find_task", description: "Find tasks by title (fuzzy). Use before adding subtasks.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "create_project", description: "Create a project.", parameters: { type: "object", properties: { name: { type: "string" }, description: { type: "string" }, color: { type: "string" }, icon: { type: "string" } }, required: ["name"] } } },
@@ -35,7 +35,7 @@ const TOOLS = [
 async function runTool(name: string, args: any, client: SupabaseClient, userId: string, touched: Set<string>) {
   switch (name) {
     case "create_task": {
-      const { data, error } = await client.from("tasks").insert({ user_id: userId, title: args.title, project_id: args.project_id ?? null, parent_task_id: args.parent_task_id ?? null, description: args.description ?? null, priority: args.priority ?? 4, due_date: args.due_date ?? null, tags: args.tags ?? [] }).select("id, title, project_id, parent_task_id, due_date, priority, status").single();
+      const { data, error } = await client.from("tasks").insert({ user_id: userId, title: args.title, project_id: args.project_id ?? null, parent_task_id: args.parent_task_id ?? null, description: args.description ?? null, priority: args.priority ?? 4, due_date: args.due_date ?? null, rrule: args.rrule ?? null, tags: args.tags ?? [] }).select("id, title, project_id, parent_task_id, due_date, priority, rrule, status").single();
       if (error) return { ok: false, error: error.message };
       touched.add("tasks"); return { ok: true, task: data };
     }
@@ -171,6 +171,7 @@ Conventions:
 - For project plans / longer briefs, use create_page with project_id set. Use create_note for quick captures.
 - Subtasks: pass parent_task_id when adding child tasks. Use find_task first if you don't know the parent's id.
 - "today"=${today}, "tomorrow"=next day, "next week"=coming Monday. Always pass ISO dates.
+- Recurring tasks: pass rrule (RFC 5545). Common patterns: monthly='FREQ=MONTHLY', weekly Mon='FREQ=WEEKLY;BYDAY=MO', weekdays='FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', daily='FREQ=DAILY', yearly='FREQ=YEARLY', every 2 weeks='FREQ=WEEKLY;INTERVAL=2'. Always also set due_date to the first occurrence (e.g. today or the next matching date).
 - Don't ask "are you sure?" for creates. Do ask before bulk delete or overwriting existing content.
 - If a tool errors, tell Jair plainly. Don't loop on the same failing call.
 
