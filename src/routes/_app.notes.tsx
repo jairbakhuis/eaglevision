@@ -332,5 +332,5 @@ function NotesPage() {
 
 export const Route = createFileRoute("/_app/notes")({
   component: NotesPage,
-  head: () => ({ meta: [{ title: "Notes — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Notes — EagleVision" }] }),
 });

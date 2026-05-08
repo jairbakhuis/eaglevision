@@ -69,7 +69,7 @@ import {
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
-  head: () => ({ meta: [{ title: "Tasks — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Tasks — EagleVision" }] }),
 });
 
 type Project = {

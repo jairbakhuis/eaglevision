@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/chat")({
   component: ChatPage,
-  head: () => ({ meta: [{ title: "Chat — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Chat — EagleVision" }] }),
 });
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; touched?: string[] };
@@ -261,7 +261,7 @@ function ChatPage() {
                   send();
                 }
               }}
-              placeholder="Message Atlas…"
+              placeholder="Message EagleVision…"
               className="min-h-[52px] resize-none"
               rows={1}
             />

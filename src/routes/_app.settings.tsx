@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsPage,
-  head: () => ({ meta: [{ title: "Settings — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Settings — EagleVision" }] }),
 });
 
 function SettingsPage() {
