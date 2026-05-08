@@ -15,6 +15,7 @@ import {
   FileText,
   Eye,
   Pencil,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [treeOpen, setTreeOpen] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -76,12 +78,24 @@ function DocumentsPage() {
     });
   }
 
+  async function requireUserId() {
+    if (userId) return userId;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      toast.error("Sign in to create documents.");
+      return null;
+    }
+    setUserId(data.user.id);
+    return data.user.id;
+  }
+
   async function createPage(parentId: string | null) {
-    if (!userId) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("pages")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: "Untitled",
         content: "",
         parent_id: parentId,
@@ -101,6 +115,8 @@ function DocumentsPage() {
     }
     setActiveId(page.id);
     setMode("edit");
+    setTreeOpen(false);
+    toast.success(parentId ? "Sub-page created" : "Document created");
   }
 
   function collectDescendants(rootId: string): string[] {
