@@ -125,19 +125,55 @@ function TasksPage() {
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[3]);
   const [editing, setEditing] = useState<Task | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    loadAll();
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setUserId(data.user?.id ?? null);
+      setAuthLoading(false);
+    });
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user.id ?? null);
+      setAuthLoading(false);
+    });
+    return () => {
+      mounted = false;
+      authSub.subscription.unsubscribe();
+    };
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!userId) {
+      setProjects([]);
+      setTasks([]);
+      return;
+    }
+    loadAll();
+  }, [authLoading, userId]);
+
   async function loadAll() {
-    const [{ data: p }, { data: t }] = await Promise.all([
+    const [{ data: p, error: projectsError }, { data: t, error: tasksError }] = await Promise.all([
       supabase.from("projects").select("*").order("position"),
       supabase.from("tasks").select("*").order("position"),
     ]);
+    if (projectsError) toast.error(projectsError.message);
+    if (tasksError) toast.error(tasksError.message);
     setProjects(p ?? []);
     setTasks(t ?? []);
+  }
+
+  async function requireUserId() {
+    if (userId) return userId;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      toast.error("Sign in to create projects and tasks.");
+      return null;
+    }
+    setUserId(data.user.id);
+    return data.user.id;
   }
 
   // Stats for dashboard
@@ -190,7 +226,9 @@ function TasksPage() {
           : projects.find((p) => p.id === filter.id)?.name ?? "Project";
 
   async function addQuick() {
-    if (!quickAdd.trim() || !userId) return;
+    if (!quickAdd.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const text = quickAdd.trim();
     setQuickAdd("");
     const projectId = filter.kind === "project" ? filter.id : null;
@@ -201,7 +239,7 @@ function TasksPage() {
     const { data, error } = await supabase
       .from("tasks")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: text,
         project_id: projectId,
         due_date: due,
@@ -216,11 +254,13 @@ function TasksPage() {
   }
 
   async function addSubtask(parent: Task, title: string) {
-    if (!title.trim() || !userId) return;
+    if (!title.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("tasks")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: title.trim(),
         parent_task_id: parent.id,
         project_id: parent.project_id,
@@ -257,11 +297,13 @@ function TasksPage() {
   }
 
   async function createProject() {
-    if (!newProjectName.trim() || !userId) return;
+    if (!newProjectName.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("projects")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         name: newProjectName.trim(),
         color: newProjectColor,
         position: projects.length,
@@ -373,6 +415,55 @@ function TasksPage() {
       {/* Main */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl p-6">
+          <div className="mb-4 space-y-3 md:hidden">
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant={filter.kind === "today" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "today" })}
+              >
+                Today
+              </Button>
+              <Button
+                variant={filter.kind === "upcoming" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "upcoming" })}
+              >
+                Upcoming
+              </Button>
+              <Button
+                variant={filter.kind === "inbox" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "inbox" })}
+              >
+                Inbox
+              </Button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewProjectOpen(true)}
+                disabled={authLoading}
+                className="shrink-0 gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Project
+              </Button>
+              {projects.map((p) => (
+                <Button
+                  key={p.id}
+                  variant={filter.kind === "project" && filter.id === p.id ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFilter({ kind: "project", id: p.id })}
+                  className="shrink-0 gap-1.5"
+                >
+                  <Hash className="h-3.5 w-3.5" style={{ color: p.color }} />
+                  {p.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Dashboard */}
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard
@@ -435,7 +526,7 @@ function TasksPage() {
               placeholder="Add a task and press Enter…"
               className="flex-1"
             />
-            <Button onClick={addQuick}>
+            <Button onClick={addQuick} disabled={authLoading}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
