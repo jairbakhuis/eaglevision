@@ -23,6 +23,13 @@ const TOOLS = [
   { type: "function", function: { name: "create_page", description: "Structured page (Notion-style). Use for project plans. project_id attaches to project.", parameters: { type: "object", properties: { title: { type: "string" }, content: { type: "string" }, parent_id: { type: "string" }, project_id: { type: "string" } }, required: ["title","content"] } } },
   { type: "function", function: { name: "search", description: "Search tasks/notes/pages.", parameters: { type: "object", properties: { query: { type: "string" }, kinds: { type: "array", items: { type: "string", enum: ["task","note","page"] } } }, required: ["query"] } } },
   { type: "function", function: { name: "get_today", description: "Today's ISO date.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "update_note", description: "Update an existing note. Pass only fields to change. WARNING: overwrites content — only call after confirmation if content is being replaced.", parameters: { type: "object", properties: { note_id: { type: "string" }, title: { type: "string" }, content: { type: "string" }, tags: { type: "array", items: { type: "string" } } }, required: ["note_id"] } } },
+  { type: "function", function: { name: "update_page", description: "Update an existing page (project plan / doc). WARNING: overwrites content — confirm with user before replacing body.", parameters: { type: "object", properties: { page_id: { type: "string" }, title: { type: "string" }, content: { type: "string" }, parent_id: { type: "string" }, project_id: { type: "string" } }, required: ["page_id"] } } },
+  { type: "function", function: { name: "update_project", description: "Rename, recolor, or update description on a project.", parameters: { type: "object", properties: { project_id: { type: "string" }, name: { type: "string" }, description: { type: "string" }, color: { type: "string" }, icon: { type: "string" } }, required: ["project_id"] } } },
+  { type: "function", function: { name: "delete_task", description: "Delete a task and all its subtasks (cascade). Always confirm with user first.", parameters: { type: "object", properties: { task_id: { type: "string" } }, required: ["task_id"] } } },
+  { type: "function", function: { name: "delete_note", description: "Delete a note. Always confirm with user first.", parameters: { type: "object", properties: { note_id: { type: "string" } }, required: ["note_id"] } } },
+  { type: "function", function: { name: "delete_page", description: "Delete a page and all its child pages (cascade). Always confirm.", parameters: { type: "object", properties: { page_id: { type: "string" } }, required: ["page_id"] } } },
+  { type: "function", function: { name: "delete_project", description: "Delete a project. WARNING: this also deletes ALL tasks in the project (cascade). Always confirm explicitly with user, naming the project and the task count.", parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] } } },
 ];
 
 async function runTool(name: string, args: any, client: SupabaseClient, userId: string, touched: Set<string>) {
@@ -97,6 +104,52 @@ async function runTool(name: string, args: any, client: SupabaseClient, userId: 
       return { ok: true, ...out };
     }
     case "get_today": return { ok: true, date: new Date().toISOString().slice(0,10) };
+    case "update_note": {
+      const { note_id, ...rest } = args;
+      const patch: any = {};
+      for (const [k, v] of Object.entries(rest)) if (v !== undefined) patch[k] = v;
+      patch.updated_at = new Date().toISOString();
+      const { data, error } = await client.from("notes").update(patch).eq("id", note_id).select("id, title").single();
+      if (error) return { ok: false, error: error.message };
+      touched.add("notes"); return { ok: true, note: data };
+    }
+    case "update_page": {
+      const { page_id, ...rest } = args;
+      const patch: any = {};
+      for (const [k, v] of Object.entries(rest)) if (v !== undefined) patch[k] = v;
+      patch.updated_at = new Date().toISOString();
+      const { data, error } = await client.from("pages").update(patch).eq("id", page_id).select("id, title").single();
+      if (error) return { ok: false, error: error.message };
+      touched.add("pages"); return { ok: true, page: data };
+    }
+    case "update_project": {
+      const { project_id, ...rest } = args;
+      const patch: any = {};
+      for (const [k, v] of Object.entries(rest)) if (v !== undefined) patch[k] = v;
+      const { data, error } = await client.from("projects").update(patch).eq("id", project_id).select("id, name, color, description").single();
+      if (error) return { ok: false, error: error.message };
+      touched.add("projects"); return { ok: true, project: data };
+    }
+    case "delete_task": {
+      const { error } = await client.from("tasks").delete().eq("id", args.task_id);
+      if (error) return { ok: false, error: error.message };
+      touched.add("tasks"); return { ok: true, deleted: args.task_id };
+    }
+    case "delete_note": {
+      const { error } = await client.from("notes").delete().eq("id", args.note_id);
+      if (error) return { ok: false, error: error.message };
+      touched.add("notes"); return { ok: true, deleted: args.note_id };
+    }
+    case "delete_page": {
+      const { error } = await client.from("pages").delete().eq("id", args.page_id);
+      if (error) return { ok: false, error: error.message };
+      touched.add("pages"); return { ok: true, deleted: args.page_id };
+    }
+    case "delete_project": {
+      const { error } = await client.from("projects").delete().eq("id", args.project_id);
+      if (error) return { ok: false, error: error.message };
+      touched.add("projects"); touched.add("tasks"); return { ok: true, deleted: args.project_id };
+    }
     default: return { ok: false, error: `Unknown tool: ${name}` };
   }
 }
@@ -119,7 +172,12 @@ Conventions:
 - Subtasks: pass parent_task_id when adding child tasks. Use find_task first if you don't know the parent's id.
 - "today"=${today}, "tomorrow"=next day, "next week"=coming Monday. Always pass ISO dates.
 - Don't ask "are you sure?" for creates. Do ask before bulk delete or overwriting existing content.
-- If a tool errors, tell Jair plainly. Don't loop on the same failing call.`;
+- If a tool errors, tell Jair plainly. Don't loop on the same failing call.
+
+Destructive operations:
+- For ANY delete (delete_task, delete_note, delete_page, delete_project) and for content-overwriting updates (update_note, update_page when "content" is being replaced), STOP and ask Jair for explicit confirmation in plain text BEFORE calling the tool. Show what you're about to delete/replace. Wait for "yes" or equivalent.
+- delete_project is especially dangerous — it cascades to delete every task in the project. Always state how many tasks would be deleted (use list_tasks first to count) and require confirmation.
+- Renames (update_project name) and metadata changes (update_project color/icon, update_note tags, update_page parent/project link without content change) do NOT require confirmation — just do them.`;
 }
 
 serve(async (req) => {
