@@ -125,7 +125,7 @@ function ChatPage() {
       const data = await resp.json();
       const replyText: string = data.reply ?? "";
       const touched: string[] = data.touched ?? [];
-      setMessages((m) => m.map((msg, i) => i === m.length - 1 && msg.role === "assistant" ? { ...msg, content: replyText } : msg));
+      setMessages((m) => m.map((msg, i) => i === m.length - 1 && msg.role === "assistant" ? { ...msg, content: replyText, touched } : msg));
       await supabase.from("messages").insert({ conversation_id: convId, user_id: u.user.id, role: "assistant", content: replyText });
       for (const table of touched) queryClient.invalidateQueries({ queryKey: [table] });
       if (data.usage) {
