@@ -1,7 +1,7 @@
 import * as chrono from "chrono-node";
 import pkg from "rrule";
 const { RRule, Frequency } = pkg;
-type Frequency = number;
+type RRuleInstance = InstanceType<typeof RRule>;
 
 export type ParsedTask = {
   title: string;
@@ -20,7 +20,7 @@ const PROJECT_RE = /(?:^|\s)#([\w-]+)/;
 const LABEL_RE = /(?:^|\s)@([\w-]+)/g;
 
 // Common natural-language recurrence phrases
-const RECUR_PATTERNS: { re: RegExp; build: (m: RegExpMatchArray) => RRule }[] = [
+const RECUR_PATTERNS: { re: RegExp; build: (m: RegExpMatchArray) => RRuleInstance }[] = [
   {
     re: /\bevery\s+day\b|\bdaily\b/i,
     build: () => new RRule({ freq: Frequency.DAILY }),
