@@ -42,6 +42,7 @@ import {
   Sparkles,
   ChevronRight,
   ChevronDown,
+  Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1222,6 +1223,10 @@ function TaskEditor({
               ))}
             </SelectContent>
           </Select>
+          <RecurrenceField
+            value={draft.rrule ?? null}
+            onChange={(v) => setDraft({ ...draft, rrule: v })}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
