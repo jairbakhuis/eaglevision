@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -28,28 +29,6 @@ type Note = {
   updated_at: string;
 };
 
-const STORAGE_KEY = "atlas.notes.v1";
-
-function loadNotes(): Note[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Note[];
-  } catch {
-    return [];
-  }
-}
-
-function saveNotes(notes: Note[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-}
-
-function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
 function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -57,32 +36,40 @@ function NotesPage() {
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [tagDraft, setTagDraft] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initial = loadNotes();
-    setNotes(initial);
-    setActiveId(initial[0]?.id ?? null);
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      setUserId(u.user?.id ?? null);
+      const { data, error } = await supabase
+        .from("notes")
+        .select("id,title,content,tags,created_at,updated_at")
+        .order("updated_at", { ascending: false });
+      if (error) toast.error(error.message);
+      const list = (data as Note[]) ?? [];
+      setNotes(list);
+      setActiveId(list[0]?.id ?? null);
+      setLoading(false);
+    })();
   }, []);
-
-  useEffect(() => {
-    saveNotes(notes);
-  }, [notes]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
-    notes.forEach((n) => n.tags.forEach((t) => set.add(t)));
+    notes.forEach((n) => (n.tags ?? []).forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [notes]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return notes
-      .filter((n) => (tagFilter ? n.tags.includes(tagFilter) : true))
+      .filter((n) => (tagFilter ? (n.tags ?? []).includes(tagFilter) : true))
       .filter((n) =>
         q
           ? n.title.toLowerCase().includes(q) ||
             n.content.toLowerCase().includes(q) ||
-            n.tags.some((t) => t.toLowerCase().includes(q))
+            (n.tags ?? []).some((t) => t.toLowerCase().includes(q))
           : true,
       )
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
@@ -90,54 +77,58 @@ function NotesPage() {
 
   const active = notes.find((n) => n.id === activeId) ?? null;
 
-  const createNote = () => {
-    const now = new Date().toISOString();
-    const note: Note = {
-      id: uid(),
-      title: "Untitled",
-      content: "",
-      tags: [],
-      created_at: now,
-      updated_at: now,
-    };
+  const createNote = async () => {
+    if (!userId) return;
+    const { data, error } = await supabase
+      .from("notes")
+      .insert({ user_id: userId, title: "Untitled", content: "", tags: [] })
+      .select("id,title,content,tags,created_at,updated_at")
+      .single();
+    if (error) return toast.error(error.message);
+    const note = data as Note;
     setNotes((prev) => [note, ...prev]);
     setActiveId(note.id);
     setMode("edit");
   };
 
-  const updateActive = (patch: Partial<Note>) => {
+  const updateActive = async (patch: Partial<Note>) => {
     if (!active) return;
+    const next = { ...active, ...patch, updated_at: new Date().toISOString() };
     setNotes((prev) =>
-      prev.map((n) =>
-        n.id === active.id
-          ? { ...n, ...patch, updated_at: new Date().toISOString() }
-          : n,
-      ),
+      prev.map((n) => (n.id === active.id ? next : n)),
     );
+    const { error } = await supabase
+      .from("notes")
+      .update({ ...patch, updated_at: next.updated_at })
+      .eq("id", active.id);
+    if (error) toast.error(error.message);
   };
 
-  const deleteActive = () => {
+  const deleteActive = async () => {
     if (!active) return;
+    const id = active.id;
     const remaining = notes.filter((n) => n.id !== active.id);
     setNotes(remaining);
     setActiveId(remaining[0]?.id ?? null);
+    const { error } = await supabase.from("notes").delete().eq("id", id);
+    if (error) return toast.error(error.message);
     toast.success("Note deleted");
   };
 
   const addTag = () => {
     const t = tagDraft.trim().toLowerCase();
     if (!t || !active) return;
-    if (active.tags.includes(t)) {
+    if ((active.tags ?? []).includes(t)) {
       setTagDraft("");
       return;
     }
-    updateActive({ tags: [...active.tags, t] });
+    updateActive({ tags: [...(active.tags ?? []), t] });
     setTagDraft("");
   };
 
   const removeTag = (tag: string) => {
     if (!active) return;
-    updateActive({ tags: active.tags.filter((t) => t !== tag) });
+    updateActive({ tags: (active.tags ?? []).filter((t) => t !== tag) });
   };
 
   return (
@@ -184,7 +175,9 @@ function NotesPage() {
           )}
         </div>
         <ScrollArea className="flex-1">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : filtered.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               <StickyNote className="mx-auto mb-2 h-8 w-8 opacity-40" />
               No notes yet
@@ -210,9 +203,9 @@ function NotesPage() {
                       {n.content.replace(/[#*`>\-]/g, "").trim().slice(0, 60) ||
                         "No content"}
                     </span>
-                    {n.tags.length > 0 && (
+                    {(n.tags ?? []).length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {n.tags.map((t) => (
+                        {(n.tags ?? []).map((t) => (
                           <span
                             key={t}
                             className="rounded bg-secondary px-1.5 text-[10px] text-secondary-foreground"
@@ -279,7 +272,7 @@ function NotesPage() {
 
             <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-2">
               <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              {active.tags.map((t) => (
+              {(active.tags ?? []).map((t) => (
                 <Badge
                   key={t}
                   variant="secondary"
