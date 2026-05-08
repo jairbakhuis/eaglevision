@@ -4,5 +4,5 @@ export const Route = createFileRoute("/_app/calendar")({
   component: () => (
     <PageStub title="Calendar" description="Month/week/day views with drag-to-reschedule." />
   ),
-  head: () => ({ meta: [{ title: "Calendar — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Calendar — EagleVision" }] }),
 });

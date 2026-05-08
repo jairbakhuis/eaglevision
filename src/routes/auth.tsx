@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Sign in — EagleVision" }] }),
 });
 
 function AuthPage() {
@@ -42,7 +42,7 @@ function AuthPage() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome to Atlas</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome to EagleVision</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Your personal AI workspace
           </p>

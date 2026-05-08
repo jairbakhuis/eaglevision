@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_app/credits")({
   component: CreditsPage,
-  head: () => ({ meta: [{ title: "Credits — Atlas" }] }),
+  head: () => ({ meta: [{ title: "Credits — EagleVision" }] }),
 });
 
 const PROVIDERS = [
