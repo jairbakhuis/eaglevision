@@ -70,7 +70,7 @@ import {
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
 import { RRule } from "rrule/dist/esm/index.js";
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
-import { Filter as FilterIcon, Pencil } from "lucide-react";
+import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
@@ -137,6 +137,7 @@ function TasksPage() {
   const [filterDialog, setFilterDialog] = useState<SavedFilter | { isNew: true } | null>(null);
   const [filter, setFilter] = useState<Filter>({ kind: "inbox" });
   const [view, setView] = useState<"list" | "kanban">("list");
+  const [showCompleted, setShowCompleted] = useState(true);
   const [quickAdd, setQuickAdd] = useState("");
   const [creatingTask, setCreatingTask] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -253,8 +254,9 @@ function TasksPage() {
         list = list.filter((t) => pred(t as any, projects));
       }
     }
+    if (!showCompleted) list = list.filter((t) => t.status !== "done");
     return list;
-  }, [tasks, filter, savedFilters, projects]);
+  }, [tasks, filter, savedFilters, projects, showCompleted]);
 
   const filterTitle =
     filter.kind === "inbox"
@@ -717,6 +719,21 @@ function TasksPage() {
                 <Columns3 className="h-3.5 w-3.5" /> Kanban
               </button>
             </div>
+            <button
+              onClick={() => setShowCompleted((v) => !v)}
+              title={showCompleted ? "Hide completed" : "Show completed"}
+              className={cn(
+                "ml-2 flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium transition",
+                showCompleted ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {showCompleted ? (
+                <Eye className="h-3.5 w-3.5" />
+              ) : (
+                <EyeOff className="h-3.5 w-3.5" />
+              )}
+              {showCompleted ? "Hide done" : "Show done"}
+            </button>
           </div>
 
           {/* Quick add */}
