@@ -594,22 +594,43 @@ function TasksPage() {
           {/* Quick add */}
           <form
             data-no-swipe
-            className="mb-4 flex gap-2"
+            className="mb-4"
             onSubmit={(e) => {
               e.preventDefault();
               addQuick();
             }}
           >
-            <Input
-              ref={quickAddRef}
-              value={quickAdd}
-              onChange={(e) => setQuickAdd(e.target.value)}
-              placeholder="Add a task…"
-              className="flex-1"
-            />
-            <Button type="submit" disabled={authLoading || creatingTask}>
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                ref={quickAddRef}
+                value={quickAdd}
+                onChange={(e) => setQuickAdd(e.target.value)}
+                placeholder="e.g. Buy skittles tomorrow at 14:00 #shopping p1"
+                className="flex-1"
+              />
+              <Button type="submit" disabled={authLoading || creatingTask}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {parsedPreview && parsedPreview.chips.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                {parsedPreview.chips.map((c, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "rounded-md px-1.5 py-0.5 font-medium",
+                      c.type === "date" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                      c.type === "recur" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+                      c.type === "priority" && "bg-red-500/15 text-red-600 dark:text-red-400",
+                      c.type === "project" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                      c.type === "label" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                    )}
+                  >
+                    {c.text}
+                  </span>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Body */}
