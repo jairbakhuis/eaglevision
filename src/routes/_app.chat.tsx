@@ -222,13 +222,24 @@ function ChatPage() {
                   )}
                 >
                   {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-muted prose-pre:text-foreground">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                      >
-                        {m.content || "…"}
-                      </ReactMarkdown>
+                    <div>
+                      {m.touched && m.touched.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {m.touched.map((t) => (
+                            <Badge key={t} variant="secondary" className="text-xs">
+                              ✓ {t} updated
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-muted prose-pre:text-foreground">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {m.content || "…"}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
