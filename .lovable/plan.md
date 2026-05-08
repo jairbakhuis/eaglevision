@@ -1,110 +1,108 @@
-# Personal AI Assistant Hub
+## Goal
 
-A private app (Google login, single user) combining a Claude-style chat with multiple AI providers, a Todoist-style task manager with dashboard, a Notion-style document workspace, notes, calendar, and a credits tracker.
+Make the task input feel "telepathic" like Todoist, plus add the power-user features that established to-do apps have proven valuable. We don't reinvent — we copy what already works.
 
-## Research summary
+## 1. Smart natural-language quick add (the headline feature)
 
-Comparable apps: TypingMind, LibreChat, Open WebUI, Msty, ChatHub, BoltAI. Common gaps yours fills:
-- Most are chat-only — yours bundles tasks, docs, notes, and calendar.
-- Few track per-provider credit usage with direct top-up links.
-- None tailored to a single-user personal hub.
+Type one line, parser extracts metadata and shows colored chips inline before submit (so you see what was understood and can confirm/edit).
 
-## App layout
+**Date & time**
+- `today`, `tomorrow`, `tom`, `tonight`, `next week`, `next monday`, `mon`, `in 3 days`, `in 2 weeks`
+- Specific: `25 dec`, `dec 25`, `25/12`, `2026-01-15`
+- Times: `at 14:00`, `at 2pm`, `9am`, `noon`, `midnight`
+- Combined: `buy skittles tomorrow at 2pm`
 
-Collapsible sidebar: Chat, Tasks, Calendar, Notes, Documents, Credits, Settings. Top bar shows model selector and quick-new buttons.
+**Recurring**
+- `every day`, `every monday`, `every weekday`, `every 2 weeks`, `every month`, `every 1st`, `every last friday`
 
-## Pages
+**Priority**
+- `p1`, `p2`, `p3`, `p4` (Todoist convention; P1 = urgent)
+- `!!!` shortcut
 
-### 1. Chat (`/`) — homepage
-- Claude-style centered conversation, streaming responses, markdown + code highlighting
-- Model picker: OpenRouter, Anthropic, OpenAI, Google Gemini (your own keys)
-- Conversations list in left rail: rename, delete, pin, search
-- Per-message: copy, regenerate, edit-and-resend
-- Attach images (vision models) and reference a Document or Note as context
-- System prompt per conversation
-- Token usage logged per message → feeds Credits page
+**Project / labels**
+- `#projectname` → routes into that project (autocomplete dropdown)
+- `@label` → tag (autocomplete)
 
-### 2. Tasks (`/tasks`) — Todoist clone
-- Sidebar of Projects (color + icon) + Inbox, Today, Upcoming
-- Inside a project: toggle **List** ↔ **Kanban** (Todo / In Progress / Done, drag-and-drop)
-- Tasks: title, markdown description, due date, priority P1–P4, labels, subtasks, comments
-- Quick-add bar with natural language ("Pay rent tomorrow 9am p1")
-- Filters: today, overdue, by label, by priority
+**Duration / reminder (lightweight)**
+- `for 30m`, `for 2h` → duration
+- `*30m before` → reminder offset
 
-### 3. Dashboard (top of Tasks page)
-- Today's tasks + completion ring
-- Overdue tasks list
-- Upcoming this week mini-timeline
-- 14-day completion streak chart
-- Per-project open vs done stats
-- "Ask AI to plan my day" → drafts an order via the chat assistant
+Library: use `chrono-node` (battle-tested NLP date parser, handles all the above for English) + a thin custom layer for `#`, `@`, `p1`, `every …`.
 
-### 4. Calendar (`/calendar`)
-- Month / week / day views of all tasks with due dates
-- Drag tasks to reschedule
-- Color-coded by project
+## 2. Recurring tasks
 
-### 5. Notes (`/notes`)
-- Markdown notes with tags and folders
-- Full-text search
-- "Send to chat as context" action
+When a recurring task is completed, auto-create the next instance based on the rule. Show 🔁 icon. Common patterns: daily, weekly on weekday, monthly on date, every N days.
 
-### 6. Documents (`/documents`) — Notion-style workspace
-- **Nested page tree** in left rail: pages can contain sub-pages infinitely; drag to reorder/reparent; collapse/expand; favorites and trash
-- **Block-based editor** (one block per line/element):
-  - Text, H1–H3, bullet/numbered/toggle lists, checkboxes, quote, divider, callout
-  - Code blocks with syntax highlighting
-  - Tables
-  - Images (uploaded to storage)
-  - File attachments (PDF, etc.) with inline preview
-  - Embeds (YouTube, links with preview cards)
-- **Slash menu** (`/`) to insert any block; **drag handle** on each block to reorder; **markdown shortcuts** (`# `, `- `, `[]`)
-- Cover image and emoji icon per page (Notion-style)
-- Backlinks: see which other pages link here
-- `@mention` other pages to link them
-- Full-text search across all pages
-- "Use page in chat" → sends page content as context to the AI
-- "Ask AI about this page" inline action
-- Share/export page as Markdown or PDF
+## 3. Smart Inbox & Today behavior
 
-### 7. Credits & Models (`/credits`)
-- Card per provider (OpenRouter, Anthropic, OpenAI, Gemini):
-  - Tokens used today / week / month (from chat logs)
-  - Estimated cost using current pricing table
-  - Direct link to that provider's billing/top-up page
-- Per-model breakdown table
-- Usage chart over last 30 days
+- **Postpone / Reschedule menu**: Today, Tomorrow, This weekend, Next week, No date, Pick date.
+- **Bulk reschedule**: select multiple → move all.
+- **Drag-into-day**: from Upcoming, drag onto another day.
 
-### 8. Settings (`/settings`)
-- Google login / sign out
-- API keys per provider (encrypted server-side)
-- Default model, default system prompt, theme (light/dark)
-- Export data
+## 4. Sections inside projects
 
-## Design
+Lightweight subdivisions (e.g. "Shopping" project → "Groceries / Hardware"). Already partly possible via subtasks, but a flat "section" header is more usable for grouping.
 
-Clean, minimal, Claude/Linear/Notion-inspired. Light + dark mode. Rounded cards, subtle borders, generous whitespace, monospace for code.
+## 5. Filters & saved views
+
+User-defined filter expressions like `today & p1`, `@home`, `overdue`, `7 days & #work`. Save as named view in sidebar. (Todoist's killer power-user feature.)
+
+## 6. Reminders & notifications
+
+- Browser web push at the due time.
+- "Smart reminder": if task has a time, remind 10 min before by default.
+
+## 7. Productivity & habit features
+
+- **Streaks / completion stats** (Todoist Karma, TickTick habit). Already partially in dashboard plan — wire it up.
+- **Daily goal**: e.g. "complete 5 tasks today" with progress ring.
+
+## 8. Inline polish
+
+- **Markdown in titles & description** (links, bold).
+- **Comments** on tasks.
+- **Task duplicate / convert to subtask** via right-click.
+- **Keyboard shortcuts**: `q` quick-add anywhere, `t` set today, `enter` save, `cmd+k` command palette.
+
+## 9. AI assists (we already have Lovable AI — leverage it)
+
+- "Plan my day" → AI orders today's tasks by priority/dependencies.
+- "Break this task into subtasks" button.
+- "Capture from text/image": paste a meeting note or screenshot → AI extracts tasks with dates (Todoist's newest feature; we can match it cheaply via Gemini vision).
+
+## 10. Calendar 2-way
+
+- Drag tasks on calendar to reschedule (already planned).
+- Show time-blocked tasks as events with duration.
+
+---
+
+## Recommended build order (incremental, each shippable)
+
+1. **Smart quick-add parser (chrono-node + projects/labels/priority/recurring)** — biggest perceived upgrade, fixes your skittles example today.
+2. **Recurring task engine** — auto-spawns next instance on complete.
+3. **Reschedule menu + Today/Tomorrow/Next-week shortcuts**.
+4. **Saved filters / custom views**.
+5. **AI: Plan my day + Break into subtasks**.
+6. **Web push reminders**.
+7. **Sections, comments, keyboard shortcuts, polish**.
 
 ## Technical notes
 
-- **Auth**: Lovable Cloud, Google sign-in only (your email allow-listed)
-- **Backend**: Lovable Cloud (Postgres, storage, server functions)
-- **AI**: server functions proxy to OpenRouter / Anthropic / OpenAI / Gemini using your stored keys; SSE streaming
-- **Token logging**: every completion writes `usage_log` (provider, model, prompt/completion tokens, cost estimate)
-- **Notion editor**: TipTap (ProseMirror) with block extensions; stored as JSON document per page
-- **Page tree**: self-referencing `pages` table with `parent_id`, `position`, `icon`, `cover_url`
-- **Drag-and-drop**: dnd-kit for Kanban, calendar reschedule, page tree reorder
-- **Markdown**: react-markdown + rehype-highlight in chat
-- **Storage**: Supabase storage bucket for page covers, document images, attachments
-- **Schema**: `conversations`, `messages`, `usage_log`, `projects`, `tasks`, `subtasks`, `labels`, `notes`, `pages` (nested), `page_links`, `page_blocks` (or JSON), `attachments`, `api_keys`, `settings`
+- Add `chrono-node` (`bun add chrono-node`) — pure JS, Worker-safe.
+- Recurrence: store `rrule` string on `tasks` (`rrule` npm package, also Worker-safe) — no schema migration needed beyond adding `rrule text` and `reminder_at timestamptz` columns.
+- Filters: store as rows in a new `filters` table (`name`, `query`, `position`).
+- Notifications: Web Push API + service worker; store subscription server-side.
+- AI features: existing `chat` edge function + structured JSON output.
 
-## Build order (after approval)
+---
 
-1. Auth + Cloud + sidebar shell + Settings (API keys)
-2. Chat with streaming for all 4 providers + usage logging
-3. Tasks: projects, list view, quick-add
-4. Tasks: Kanban + dashboard widgets
-5. Calendar
-6. Credits page (reads usage_log)
-7. Notes
-8. Documents (Notion-style nested pages + block editor)
+## Decision needed before I implement
+
+Pick what to build first (or "all of #1"):
+
+- **A.** Just smart quick-add + recurring (steps 1–2). Fastest path to your skittles example. ~1 build.
+- **B.** A + reschedule shortcuts + saved filters (steps 1–4). Full Todoist-class core. ~2–3 builds.
+- **C.** Full plan (1–7) phased over several iterations.
+
+Tell me A / B / C (or pick specific numbers) and I'll implement.
