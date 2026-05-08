@@ -3,6 +3,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { supabase } from "@/integrations/supabase/client";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
@@ -15,6 +17,8 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
+  const isMobile = useIsMobile();
+  useSwipeNavigation(isMobile);
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
