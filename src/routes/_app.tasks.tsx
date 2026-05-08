@@ -337,7 +337,7 @@ function TasksPage() {
         const { data, error } = await supabase
           .from("tasks")
           .insert({
-            user_id: task.user_id ?? (await supabase.auth.getUser()).data.user?.id,
+            user_id: (await supabase.auth.getUser()).data.user?.id,
             title: task.title,
             description: task.description,
             project_id: task.project_id,
