@@ -1,6 +1,5 @@
 import * as chrono from "chrono-node";
-import rrulePkg from "rrule";
-const { RRule, Frequency } = rrulePkg;
+import { RRule, Frequency } from "rrule/dist/esm/index.js";
 type RRuleInstance = InstanceType<typeof RRule>;
 
 export type ParsedTask = {
