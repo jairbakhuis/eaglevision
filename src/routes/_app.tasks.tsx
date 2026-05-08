@@ -251,6 +251,7 @@ function TasksPage() {
       .single();
     if (error) return toast.error(error.message);
     setTasks((t) => [...t, data as Task]);
+    toast.success("Task created");
   }
 
   async function addSubtask(parent: Task, title: string) {
@@ -272,6 +273,7 @@ function TasksPage() {
       .single();
     if (error) return toast.error(error.message);
     setTasks((t) => [...t, data as Task]);
+    toast.success("Subtask created");
   }
 
   async function toggleDone(task: Task) {
@@ -315,6 +317,7 @@ function TasksPage() {
     setNewProjectName("");
     setNewProjectOpen(false);
     setFilter({ kind: "project", id: data.id });
+    toast.success("Project created");
   }
 
   async function deleteProject(id: string) {
