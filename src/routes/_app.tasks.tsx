@@ -162,7 +162,7 @@ function TasksPage() {
 
   // Filtered tasks
   const filtered = useMemo(() => {
-    let list = tasks;
+    let list = tasks.filter((t) => !t.parent_task_id);
     if (filter.kind === "inbox") list = list.filter((t) => !t.project_id);
     else if (filter.kind === "today")
       list = list.filter(
@@ -425,6 +425,7 @@ function TasksPage() {
           {view === "list" ? (
             <ListView
               tasks={filtered}
+              allTasks={tasks}
               projects={projects}
               onToggle={toggleDone}
               onEdit={setEditing}
