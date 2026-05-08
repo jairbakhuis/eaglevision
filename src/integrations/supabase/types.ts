@@ -252,6 +252,7 @@ export type Database = {
           position: number
           priority: number
           project_id: string | null
+          rrule: string | null
           search: unknown
           status: string
           tags: string[]
@@ -269,6 +270,7 @@ export type Database = {
           position?: number
           priority?: number
           project_id?: string | null
+          rrule?: string | null
           search?: unknown
           status?: string
           tags?: string[]
@@ -286,6 +288,7 @@ export type Database = {
           position?: number
           priority?: number
           project_id?: string | null
+          rrule?: string | null
           search?: unknown
           status?: string
           tags?: string[]

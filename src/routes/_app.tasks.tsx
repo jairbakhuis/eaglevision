@@ -66,6 +66,7 @@ import {
   startOfDay,
   endOfDay,
 } from "date-fns";
+import { parseTask, nextOccurrence } from "@/lib/taskParser";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
@@ -90,6 +91,7 @@ type Task = {
   position: number;
   completed_at: string | null;
   parent_task_id: string | null;
+  rrule?: string | null;
 };
 
 type Filter =
@@ -128,6 +130,12 @@ function TasksPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const quickAddRef = useRef<HTMLInputElement>(null);
+
+  // Live preview of what natural-language quick-add will produce
+  const parsedPreview = useMemo(
+    () => (quickAdd.trim() ? parseTask(quickAdd) : null),
+    [quickAdd],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -238,19 +246,34 @@ function TasksPage() {
     const text = quickAdd.trim();
     setCreatingTask(true);
     setQuickAdd("");
-    const projectId = filter.kind === "project" ? filter.id : null;
-    const due =
-      filter.kind === "today" || filter.kind === "upcoming"
+    const parsed = parseTask(text);
+
+    // Match #project name to an existing project (case-insensitive)
+    let projectId: string | null = filter.kind === "project" ? filter.id : null;
+    if (parsed.projectName) {
+      const match = projects.find(
+        (p) => p.name.toLowerCase() === parsed.projectName!.toLowerCase(),
+      );
+      if (match) projectId = match.id;
+    }
+
+    // Date: parser wins; otherwise default by current view
+    const due = parsed.dueDate
+      ? parsed.dueDate.toISOString()
+      : filter.kind === "today" || filter.kind === "upcoming"
         ? endOfDay(new Date()).toISOString()
         : null;
+
     const { data, error } = await supabase
       .from("tasks")
       .insert({
         user_id: currentUserId,
-        title: text,
+        title: parsed.title,
         project_id: projectId,
         due_date: due,
-        priority: 4,
+        priority: parsed.priority,
+        tags: parsed.labels,
+        rrule: parsed.rrule,
         status: "todo",
         position: tasks.length,
       })
@@ -305,6 +328,32 @@ function TasksPage() {
     };
     setTasks((all) => all.map((x) => (x.id === task.id ? { ...x, ...patch } : x)));
     await supabase.from("tasks").update(patch).eq("id", task.id);
+
+    // Spawn next instance for recurring tasks
+    if (done && task.rrule && task.due_date) {
+      const next = nextOccurrence(task.rrule, new Date(task.due_date));
+      if (next) {
+        const { data, error } = await supabase
+          .from("tasks")
+          .insert({
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            title: task.title,
+            description: task.description,
+            project_id: task.project_id,
+            priority: task.priority,
+            due_date: next.toISOString(),
+            rrule: task.rrule,
+            status: "todo",
+            position: tasks.length,
+          } as any)
+          .select()
+          .single();
+        if (!error && data) {
+          setTasks((t) => [...t, data as Task]);
+          toast.success(`Next: ${format(next, "MMM d")}`);
+        }
+      }
+    }
   }
 
   async function deleteTask(id: string) {
@@ -544,22 +593,43 @@ function TasksPage() {
           {/* Quick add */}
           <form
             data-no-swipe
-            className="mb-4 flex gap-2"
+            className="mb-4"
             onSubmit={(e) => {
               e.preventDefault();
               addQuick();
             }}
           >
-            <Input
-              ref={quickAddRef}
-              value={quickAdd}
-              onChange={(e) => setQuickAdd(e.target.value)}
-              placeholder="Add a task…"
-              className="flex-1"
-            />
-            <Button type="submit" disabled={authLoading || creatingTask}>
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                ref={quickAddRef}
+                value={quickAdd}
+                onChange={(e) => setQuickAdd(e.target.value)}
+                placeholder="e.g. Buy skittles tomorrow at 14:00 #shopping p1"
+                className="flex-1"
+              />
+              <Button type="submit" disabled={authLoading || creatingTask}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {parsedPreview && parsedPreview.chips.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                {parsedPreview.chips.map((c, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "rounded-md px-1.5 py-0.5 font-medium",
+                      c.type === "date" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                      c.type === "recur" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+                      c.type === "priority" && "bg-red-500/15 text-red-600 dark:text-red-400",
+                      c.type === "project" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                      c.type === "label" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                    )}
+                  >
+                    {c.text}
+                  </span>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Body */}
