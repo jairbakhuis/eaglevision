@@ -68,6 +68,7 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
+import { RRule, Frequency } from "rrule";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
@@ -949,6 +950,11 @@ function TaskRow({
           )}
           {task.priority < 4 && (
             <Flag className={cn("h-3 w-3", PRIORITY_COLORS[task.priority])} />
+          )}
+          {task.rrule && (
+            <span className="flex items-center gap-1 text-purple-500" title={describeRecurrence(task.rrule)}>
+              <Repeat className="h-3 w-3" />
+            </span>
           )}
         </div>
       </div>
