@@ -226,7 +226,9 @@ function TasksPage() {
           : projects.find((p) => p.id === filter.id)?.name ?? "Project";
 
   async function addQuick() {
-    if (!quickAdd.trim() || !userId) return;
+    if (!quickAdd.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const text = quickAdd.trim();
     setQuickAdd("");
     const projectId = filter.kind === "project" ? filter.id : null;
@@ -237,7 +239,7 @@ function TasksPage() {
     const { data, error } = await supabase
       .from("tasks")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: text,
         project_id: projectId,
         due_date: due,
@@ -252,11 +254,13 @@ function TasksPage() {
   }
 
   async function addSubtask(parent: Task, title: string) {
-    if (!title.trim() || !userId) return;
+    if (!title.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("tasks")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         title: title.trim(),
         parent_task_id: parent.id,
         project_id: parent.project_id,
@@ -293,11 +297,13 @@ function TasksPage() {
   }
 
   async function createProject() {
-    if (!newProjectName.trim() || !userId) return;
+    if (!newProjectName.trim()) return;
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
     const { data, error } = await supabase
       .from("projects")
       .insert({
-        user_id: userId,
+        user_id: currentUserId,
         name: newProjectName.trim(),
         color: newProjectColor,
         position: projects.length,
