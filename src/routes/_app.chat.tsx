@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Send, Sparkles, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/chat")({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_app/chat")({
   head: () => ({ meta: [{ title: "Chat — Atlas" }] }),
 });
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; touched?: string[] };
 type Conv = { id: string; title: string; model: string };
 
 const MODELS = [
