@@ -125,19 +125,55 @@ function TasksPage() {
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[3]);
   const [editing, setEditing] = useState<Task | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    loadAll();
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setUserId(data.user?.id ?? null);
+      setAuthLoading(false);
+    });
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user.id ?? null);
+      setAuthLoading(false);
+    });
+    return () => {
+      mounted = false;
+      authSub.subscription.unsubscribe();
+    };
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!userId) {
+      setProjects([]);
+      setTasks([]);
+      return;
+    }
+    loadAll();
+  }, [authLoading, userId]);
+
   async function loadAll() {
-    const [{ data: p }, { data: t }] = await Promise.all([
+    const [{ data: p, error: projectsError }, { data: t, error: tasksError }] = await Promise.all([
       supabase.from("projects").select("*").order("position"),
       supabase.from("tasks").select("*").order("position"),
     ]);
+    if (projectsError) toast.error(projectsError.message);
+    if (tasksError) toast.error(tasksError.message);
     setProjects(p ?? []);
     setTasks(t ?? []);
+  }
+
+  async function requireUserId() {
+    if (userId) return userId;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      toast.error("Sign in to create projects and tasks.");
+      return null;
+    }
+    setUserId(data.user.id);
+    return data.user.id;
   }
 
   // Stats for dashboard
