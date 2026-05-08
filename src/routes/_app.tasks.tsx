@@ -215,6 +215,25 @@ function TasksPage() {
     setTasks((t) => [...t, data as Task]);
   }
 
+  async function addSubtask(parent: Task, title: string) {
+    if (!title.trim() || !userId) return;
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        user_id: userId,
+        title: title.trim(),
+        parent_task_id: parent.id,
+        project_id: parent.project_id,
+        priority: 4,
+        status: "todo",
+        position: tasks.length,
+      })
+      .select()
+      .single();
+    if (error) return toast.error(error.message);
+    setTasks((t) => [...t, data as Task]);
+  }
+
   async function toggleDone(task: Task) {
     const done = task.status !== "done";
     const patch = {
@@ -430,6 +449,7 @@ function TasksPage() {
               onToggle={toggleDone}
               onEdit={setEditing}
               onDelete={deleteTask}
+              onAddSubtask={addSubtask}
             />
           ) : (
             <KanbanView
@@ -488,6 +508,7 @@ function TasksPage() {
       <TaskEditor
         task={editing}
         projects={projects}
+        allTasks={tasks}
         onClose={() => setEditing(null)}
         onSave={saveTask}
       />
@@ -559,6 +580,7 @@ function ListView({
   onToggle,
   onEdit,
   onDelete,
+  onAddSubtask,
 }: {
   tasks: Task[];
   allTasks: Task[];
@@ -566,6 +588,7 @@ function ListView({
   onToggle: (t: Task) => void;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
+  onAddSubtask: (parent: Task, title: string) => void;
 }) {
   const childrenByParent = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -578,6 +601,8 @@ function ListView({
     return map;
   }, [allTasks]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [addingFor, setAddingFor] = useState<string | null>(null);
+  const [subDraft, setSubDraft] = useState("");
   const toggle = (id: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -601,6 +626,15 @@ function ListView({
               hasChildren={subs.length > 0}
               collapsed={isCollapsed}
               onToggleCollapse={() => toggle(t.id)}
+              onAddSubtask={() => {
+                setAddingFor(t.id);
+                setSubDraft("");
+                setCollapsed((prev) => {
+                  const next = new Set(prev);
+                  next.delete(t.id);
+                  return next;
+                });
+              }}
             />
             {!isCollapsed &&
               subs.map((s) => (
@@ -614,6 +648,27 @@ function ListView({
                   isSubtask
                 />
               ))}
+            {addingFor === t.id && (
+              <div className="flex items-center gap-2 border-l-2 border-border/60 bg-muted/20 py-1.5 pl-[36px] pr-3">
+                <Input
+                  autoFocus
+                  value={subDraft}
+                  onChange={(e) => setSubDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      onAddSubtask(t, subDraft);
+                      setSubDraft("");
+                      setAddingFor(null);
+                    } else if (e.key === "Escape") {
+                      setAddingFor(null);
+                    }
+                  }}
+                  onBlur={() => setAddingFor(null)}
+                  placeholder="Subtask title — Enter to add, Esc to cancel"
+                  className="h-7 text-xs"
+                />
+              </div>
+            )}
           </div>
         );
       })}
@@ -631,6 +686,7 @@ function TaskRow({
   hasChildren,
   collapsed,
   onToggleCollapse,
+  onAddSubtask,
 }: {
   task: Task;
   project: Project | null;
@@ -641,6 +697,7 @@ function TaskRow({
   hasChildren?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onAddSubtask?: () => void;
 }) {
   const done = task.status === "done";
   const overdue =
@@ -700,6 +757,18 @@ function TaskRow({
       >
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
       </button>
+      {!isSubtask && onAddSubtask && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddSubtask();
+          }}
+          className="opacity-0 transition group-hover:opacity-100"
+          title="Add subtask"
+        >
+          <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+        </button>
+      )}
     </div>
   );
 }
@@ -830,11 +899,13 @@ function KanbanCard({
 function TaskEditor({
   task,
   projects,
+  allTasks,
   onClose,
   onSave,
 }: {
   task: Task | null;
   projects: Project[];
+  allTasks: Task[];
   onClose: () => void;
   onSave: (t: Task) => void;
 }) {
@@ -842,6 +913,10 @@ function TaskEditor({
   useEffect(() => setDraft(task), [task]);
 
   if (!draft) return null;
+
+  const parentCandidates = allTasks.filter(
+    (t) => !t.parent_task_id && t.id !== draft.id,
+  );
 
   return (
     <Dialog open={!!task} onOpenChange={(o) => !o && onClose()}>
@@ -929,6 +1004,24 @@ function TaskEditor({
               </SelectContent>
             </Select>
           </div>
+          <Select
+            value={draft.parent_task_id ?? "none"}
+            onValueChange={(v) =>
+              setDraft({ ...draft, parent_task_id: v === "none" ? null : v })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Parent task" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No parent (top-level)</SelectItem>
+              {parentCandidates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
