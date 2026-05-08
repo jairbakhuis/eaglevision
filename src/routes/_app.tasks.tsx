@@ -66,6 +66,8 @@ import {
   startOfDay,
   endOfDay,
 } from "date-fns";
+import { parseTask, nextOccurrence } from "@/lib/taskParser";
+import { Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
@@ -90,6 +92,7 @@ type Task = {
   position: number;
   completed_at: string | null;
   parent_task_id: string | null;
+  rrule?: string | null;
 };
 
 type Filter =
@@ -128,6 +131,12 @@ function TasksPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const quickAddRef = useRef<HTMLInputElement>(null);
+
+  // Live preview of what natural-language quick-add will produce
+  const parsedPreview = useMemo(
+    () => (quickAdd.trim() ? parseTask(quickAdd) : null),
+    [quickAdd],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -238,19 +247,34 @@ function TasksPage() {
     const text = quickAdd.trim();
     setCreatingTask(true);
     setQuickAdd("");
-    const projectId = filter.kind === "project" ? filter.id : null;
-    const due =
-      filter.kind === "today" || filter.kind === "upcoming"
+    const parsed = parseTask(text);
+
+    // Match #project name to an existing project (case-insensitive)
+    let projectId: string | null = filter.kind === "project" ? filter.id : null;
+    if (parsed.projectName) {
+      const match = projects.find(
+        (p) => p.name.toLowerCase() === parsed.projectName!.toLowerCase(),
+      );
+      if (match) projectId = match.id;
+    }
+
+    // Date: parser wins; otherwise default by current view
+    const due = parsed.dueDate
+      ? parsed.dueDate.toISOString()
+      : filter.kind === "today" || filter.kind === "upcoming"
         ? endOfDay(new Date()).toISOString()
         : null;
+
     const { data, error } = await supabase
       .from("tasks")
       .insert({
         user_id: currentUserId,
-        title: text,
+        title: parsed.title,
         project_id: projectId,
         due_date: due,
-        priority: 4,
+        priority: parsed.priority,
+        tags: parsed.labels,
+        rrule: parsed.rrule,
         status: "todo",
         position: tasks.length,
       })
@@ -305,6 +329,32 @@ function TasksPage() {
     };
     setTasks((all) => all.map((x) => (x.id === task.id ? { ...x, ...patch } : x)));
     await supabase.from("tasks").update(patch).eq("id", task.id);
+
+    // Spawn next instance for recurring tasks
+    if (done && task.rrule && task.due_date) {
+      const next = nextOccurrence(task.rrule, new Date(task.due_date));
+      if (next) {
+        const { data, error } = await supabase
+          .from("tasks")
+          .insert({
+            user_id: task.user_id ?? (await supabase.auth.getUser()).data.user?.id,
+            title: task.title,
+            description: task.description,
+            project_id: task.project_id,
+            priority: task.priority,
+            due_date: next.toISOString(),
+            rrule: task.rrule,
+            status: "todo",
+            position: tasks.length,
+          } as any)
+          .select()
+          .single();
+        if (!error && data) {
+          setTasks((t) => [...t, data as Task]);
+          toast.success(`Next: ${format(next, "MMM d")}`);
+        }
+      }
+    }
   }
 
   async function deleteTask(id: string) {
