@@ -1244,3 +1244,116 @@ function TaskEditor({
     </Dialog>
   );
 }
+
+// ─── Recurrence helpers ───────────────────────────────────────────────────
+
+const RECURRENCE_PRESETS: { label: string; value: string }[] = [
+  { label: "Does not repeat", value: "" },
+  { label: "Daily", value: "FREQ=DAILY" },
+  { label: "Every weekday", value: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" },
+  { label: "Weekly", value: "FREQ=WEEKLY" },
+  { label: "Every 2 weeks", value: "FREQ=WEEKLY;INTERVAL=2" },
+  { label: "Monthly", value: "FREQ=MONTHLY" },
+  { label: "Yearly", value: "FREQ=YEARLY" },
+];
+
+export function describeRecurrence(rrule: string | null): string {
+  if (!rrule) return "Does not repeat";
+  const preset = RECURRENCE_PRESETS.find((p) => p.value === rrule);
+  if (preset) return preset.label;
+  try {
+    return RRule.fromString(rrule.startsWith("RRULE:") ? rrule : `RRULE:${rrule}`).toText();
+  } catch {
+    return "Custom";
+  }
+}
+
+function RecurrenceField({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const isPreset = !value || RECURRENCE_PRESETS.some((p) => p.value === value);
+  const [mode, setMode] = useState<"preset" | "manual">(isPreset ? "preset" : "manual");
+  const [manual, setManual] = useState(value ?? "");
+
+  useEffect(() => {
+    if (value && !RECURRENCE_PRESETS.some((p) => p.value === value)) {
+      setMode("manual");
+      setManual(value);
+    }
+  }, [value]);
+
+  return (
+    <div className="space-y-2 rounded-md border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Repeat className="h-4 w-4 text-muted-foreground" />
+          Recurrence
+        </div>
+        <div className="flex gap-1 rounded-md border border-border p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setMode("preset")}
+            className={cn(
+              "rounded px-2 py-0.5",
+              mode === "preset" ? "bg-accent" : "text-muted-foreground",
+            )}
+          >
+            Presets
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("manual")}
+            className={cn(
+              "rounded px-2 py-0.5",
+              mode === "manual" ? "bg-accent" : "text-muted-foreground",
+            )}
+          >
+            Manual
+          </button>
+        </div>
+      </div>
+
+      {mode === "preset" ? (
+        <Select
+          value={value ?? ""}
+          onValueChange={(v) => onChange(v === "" ? null : v)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {RECURRENCE_PRESETS.map((p) => (
+              <SelectItem key={p.label} value={p.value || "__none__"}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <div className="space-y-1.5">
+          <Input
+            value={manual}
+            onChange={(e) => setManual(e.target.value)}
+            onBlur={() => onChange(manual.trim() ? manual.trim() : null)}
+            placeholder="FREQ=WEEKLY;BYDAY=MO,WE,FR"
+            className="font-mono text-xs"
+          />
+          <p className="text-xs text-muted-foreground">
+            RFC 5545 RRULE. Examples: <code>FREQ=DAILY;INTERVAL=3</code>,{" "}
+            <code>FREQ=MONTHLY;BYMONTHDAY=1</code>,{" "}
+            <code>FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR</code>
+          </p>
+          {value && (
+            <p className="text-xs text-purple-500">
+              → {describeRecurrence(value)}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
