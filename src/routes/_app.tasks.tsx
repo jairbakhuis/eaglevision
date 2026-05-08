@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,12 +120,14 @@ function TasksPage() {
   const [filter, setFilter] = useState<Filter>({ kind: "inbox" });
   const [view, setView] = useState<"list" | "kanban">("list");
   const [quickAdd, setQuickAdd] = useState("");
+  const [creatingTask, setCreatingTask] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[3]);
   const [editing, setEditing] = useState<Task | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const quickAddRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -226,10 +228,15 @@ function TasksPage() {
           : projects.find((p) => p.id === filter.id)?.name ?? "Project";
 
   async function addQuick() {
-    if (!quickAdd.trim()) return;
+    if (creatingTask) return;
+    if (!quickAdd.trim()) {
+      quickAddRef.current?.focus();
+      return;
+    }
     const currentUserId = await requireUserId();
     if (!currentUserId) return;
     const text = quickAdd.trim();
+    setCreatingTask(true);
     setQuickAdd("");
     const projectId = filter.kind === "project" ? filter.id : null;
     const due =
@@ -251,6 +258,7 @@ function TasksPage() {
       .single();
     if (error) {
       setQuickAdd(text);
+      setCreatingTask(false);
       return toast.error(error.message);
     }
     setTasks((t) => [...t, data as Task]);
@@ -262,6 +270,8 @@ function TasksPage() {
       (filter.kind === "upcoming" && inserted.due_date) ||
       (filter.kind === "project" && inserted.project_id === filter.id);
     if (!visibleHere) setFilter({ kind: "inbox" });
+    setCreatingTask(false);
+    requestAnimationFrame(() => quickAddRef.current?.focus());
     toast.success("Task created");
   }
 
@@ -541,12 +551,13 @@ function TasksPage() {
             }}
           >
             <Input
+              ref={quickAddRef}
               value={quickAdd}
               onChange={(e) => setQuickAdd(e.target.value)}
               placeholder="Add a task…"
               className="flex-1"
             />
-            <Button type="submit" disabled={authLoading || !quickAdd.trim()}>
+            <Button type="submit" disabled={authLoading || creatingTask}>
               <Plus className="h-4 w-4" />
             </Button>
           </form>
