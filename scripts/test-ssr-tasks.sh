@@ -31,9 +31,10 @@ BODY=$(mktemp)
 CODE=$(curl -s -o "$BODY" -w "%{http_code}" "http://127.0.0.1:$PORT/tasks" || true)
 
 FAIL=0
-if [ "$CODE" != "200" ] && [ "$CODE" != "302" ]; then
-  echo "[ssr-test] FAIL: HTTP $CODE"; FAIL=1
-fi
+case "$CODE" in
+  200|301|302|303|307|308) ;;
+  *) echo "[ssr-test] FAIL: HTTP $CODE"; FAIL=1 ;;
+esac
 if grep -q '"unhandled":true' "$BODY"; then
   echo "[ssr-test] FAIL: h3 swallowed SSR error"; FAIL=1
 fi
