@@ -567,6 +567,51 @@ function TasksPage() {
             <p className="px-2 text-xs text-muted-foreground">No projects yet.</p>
           )}
         </div>
+
+        <div className="mt-6 mb-2 flex items-center justify-between px-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Filters
+          </span>
+          <button
+            onClick={() => setFilterDialog({ isNew: true })}
+            className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div className="space-y-0.5">
+          {savedFilters.map((sf) => (
+            <div key={sf.id} className="group flex items-center">
+              <button
+                onClick={() => setFilter({ kind: "saved", id: sf.id })}
+                className={cn(
+                  "flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent",
+                  filter.kind === "saved" && filter.id === sf.id && "bg-accent",
+                )}
+              >
+                <FilterIcon className="h-4 w-4" style={{ color: sf.color }} />
+                <span className="truncate">{sf.name}</span>
+              </button>
+              <button
+                onClick={() => setFilterDialog(sf)}
+                className="opacity-0 transition group-hover:opacity-100"
+              >
+                <Pencil className="mr-1 h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+              </button>
+              <button
+                onClick={() => deleteSavedFilter(sf.id)}
+                className="opacity-0 transition group-hover:opacity-100"
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
+          ))}
+          {savedFilters.length === 0 && (
+            <p className="px-2 text-xs text-muted-foreground">
+              Save queries like <code>today &amp; p1</code>
+            </p>
+          )}
+        </div>
       </aside>
 
       {/* Main */}
@@ -795,6 +840,15 @@ function TasksPage() {
         allTasks={tasks}
         onClose={() => setEditing(null)}
         onSave={saveTask}
+      />
+
+      {/* Filter editor */}
+      <FilterEditor
+        state={filterDialog}
+        tasks={tasks}
+        projects={projects}
+        onClose={() => setFilterDialog(null)}
+        onSave={saveFilter}
       />
     </div>
   );
