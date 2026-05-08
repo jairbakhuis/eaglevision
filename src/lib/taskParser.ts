@@ -1,5 +1,7 @@
 import * as chrono from "chrono-node";
-import { RRule, Frequency } from "rrule";
+import pkg from "rrule";
+const { RRule, Frequency } = pkg;
+type Frequency = number;
 
 export type ParsedTask = {
   title: string;
