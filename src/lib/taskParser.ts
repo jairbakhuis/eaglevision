@@ -1,6 +1,7 @@
 import * as chrono from "chrono-node";
-import rrulePkg from "rrule";
+import * as rruleModule from "rrule/dist/es5/rrule.js";
 
+const rrulePkg = (rruleModule as any).default ?? (rruleModule as any).rrule ?? rruleModule;
 const { RRule, Frequency } = rrulePkg;
 type RRuleInstance = InstanceType<typeof RRule>;
 
