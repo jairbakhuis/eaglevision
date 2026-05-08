@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Send, Sparkles, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/chat")({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_app/chat")({
   head: () => ({ meta: [{ title: "Chat — Atlas" }] }),
 });
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; touched?: string[] };
 type Conv = { id: string; title: string; model: string };
 
 const MODELS = [
@@ -124,7 +125,7 @@ function ChatPage() {
       const data = await resp.json();
       const replyText: string = data.reply ?? "";
       const touched: string[] = data.touched ?? [];
-      setMessages((m) => m.map((msg, i) => i === m.length - 1 && msg.role === "assistant" ? { ...msg, content: replyText } : msg));
+      setMessages((m) => m.map((msg, i) => i === m.length - 1 && msg.role === "assistant" ? { ...msg, content: replyText, touched } : msg));
       await supabase.from("messages").insert({ conversation_id: convId, user_id: u.user.id, role: "assistant", content: replyText });
       for (const table of touched) queryClient.invalidateQueries({ queryKey: [table] });
       if (data.usage) {
@@ -221,13 +222,24 @@ function ChatPage() {
                   )}
                 >
                   {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-muted prose-pre:text-foreground">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
-                      >
-                        {m.content || "…"}
-                      </ReactMarkdown>
+                    <div>
+                      {m.touched && m.touched.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {m.touched.map((t) => (
+                            <Badge key={t} variant="secondary" className="text-xs">
+                              ✓ {t} updated
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-pre:bg-muted prose-pre:text-foreground">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {m.content || "…"}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
