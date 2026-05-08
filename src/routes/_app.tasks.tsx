@@ -859,24 +859,24 @@ function TaskRow({
           )}
         </div>
       </div>
-      <button
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 transition group-hover:opacity-100"
-      >
-        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-      </button>
       {!isSubtask && onAddSubtask && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onAddSubtask();
           }}
-          className="opacity-0 transition group-hover:opacity-100"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:h-auto md:w-auto md:opacity-0 md:group-hover:opacity-100"
           title="Add subtask"
         >
           <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
         </button>
       )}
+      <button
+        onClick={() => onDelete(task.id)}
+        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive md:h-auto md:w-auto md:opacity-0 md:group-hover:opacity-100"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
