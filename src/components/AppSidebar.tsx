@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Chat", url: "/", icon: MessageSquare },
+  { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
   { title: "Notes", url: "/notes", icon: StickyNote },
