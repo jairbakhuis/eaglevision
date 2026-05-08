@@ -16,10 +16,7 @@ LOG=/tmp/ssr-wrangler.log
 : > "$LOG"
 
 echo "[ssr-test] Starting wrangler dev on :$PORT…"
-TMPDIR_RUN=$(mktemp -d)
-cp -r dist/server/* "$TMPDIR_RUN/"
-cp -r dist/client "$TMPDIR_RUN/../client" 2>/dev/null || true
-(cd "$TMPDIR_RUN" && npx --yes wrangler@4 dev --port "$PORT" --ip 127.0.0.1 --log-level warn >"$LOG" 2>&1) &
+npx --yes wrangler@4 dev --config dist/server/wrangler.json --port "$PORT" --ip 127.0.0.1 --log-level warn >"$LOG" 2>&1 &
 PID=$!
 trap 'kill $PID 2>/dev/null || true' EXIT
 
