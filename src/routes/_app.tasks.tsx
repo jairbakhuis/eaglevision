@@ -117,7 +117,7 @@ const KANBAN_COLUMNS = [
 function TasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<Filter>({ kind: "today" });
+  const [filter, setFilter] = useState<Filter>({ kind: "inbox" });
   const [view, setView] = useState<"list" | "kanban">("list");
   const [quickAdd, setQuickAdd] = useState("");
   const [newProjectOpen, setNewProjectOpen] = useState(false);
