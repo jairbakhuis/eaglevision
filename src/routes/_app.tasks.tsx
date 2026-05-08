@@ -554,29 +554,69 @@ function NavBtn({
 
 function ListView({
   tasks,
+  allTasks,
   projects,
   onToggle,
   onEdit,
   onDelete,
 }: {
   tasks: Task[];
+  allTasks: Task[];
   projects: Project[];
   onToggle: (t: Task) => void;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
 }) {
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const t of allTasks) {
+      if (!t.parent_task_id) continue;
+      const arr = map.get(t.parent_task_id) ?? [];
+      arr.push(t);
+      map.set(t.parent_task_id, arr);
+    }
+    return map;
+  }, [allTasks]);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   return (
     <div className="divide-y divide-border rounded-lg border border-border bg-card">
-      {tasks.map((t) => (
-        <TaskRow
-          key={t.id}
-          task={t}
-          project={projects.find((p) => p.id === t.project_id) ?? null}
-          onToggle={onToggle}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+      {tasks.map((t) => {
+        const subs = childrenByParent.get(t.id) ?? [];
+        const isCollapsed = collapsed.has(t.id);
+        return (
+          <div key={t.id}>
+            <TaskRow
+              task={t}
+              project={projects.find((p) => p.id === t.project_id) ?? null}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              hasChildren={subs.length > 0}
+              collapsed={isCollapsed}
+              onToggleCollapse={() => toggle(t.id)}
+            />
+            {!isCollapsed &&
+              subs.map((s) => (
+                <TaskRow
+                  key={s.id}
+                  task={s}
+                  project={projects.find((p) => p.id === s.project_id) ?? null}
+                  onToggle={onToggle}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  isSubtask
+                />
+              ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -587,21 +627,54 @@ function TaskRow({
   onToggle,
   onEdit,
   onDelete,
+  isSubtask,
+  hasChildren,
+  collapsed,
+  onToggleCollapse,
 }: {
   task: Task;
   project: Project | null;
   onToggle: (t: Task) => void;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
+  isSubtask?: boolean;
+  hasChildren?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const done = task.status === "done";
   const overdue =
     task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date)) && !done;
   return (
-    <div className="group flex items-center gap-3 px-3 py-2.5 hover:bg-accent/40">
+    <div
+      className={cn(
+        "group flex items-center gap-2 px-3 py-2.5 hover:bg-accent/40",
+        isSubtask && "border-l-2 border-border/60 bg-muted/20 py-1.5 pl-[36px]",
+      )}
+    >
+      {!isSubtask && (
+        <button
+          onClick={hasChildren ? onToggleCollapse : undefined}
+          className={cn(
+            "flex h-4 w-4 items-center justify-center text-muted-foreground",
+            !hasChildren && "invisible",
+          )}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )}
+        </button>
+      )}
       <Checkbox checked={done} onCheckedChange={() => onToggle(task)} />
       <div className="flex-1 cursor-pointer" onClick={() => onEdit(task)}>
-        <div className={cn("text-sm", done && "text-muted-foreground line-through")}>
+        <div
+          className={cn(
+            isSubtask ? "text-xs" : "text-sm",
+            done && "text-muted-foreground line-through",
+          )}
+        >
           {task.title}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
