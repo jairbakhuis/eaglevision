@@ -69,6 +69,8 @@ import {
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
 import { RRule } from "rrule";
+import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
+import { Filter as FilterIcon, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
@@ -100,7 +102,17 @@ type Filter =
   | { kind: "inbox" }
   | { kind: "today" }
   | { kind: "upcoming" }
-  | { kind: "project"; id: string };
+  | { kind: "project"; id: string }
+  | { kind: "saved"; id: string };
+
+type SavedFilter = {
+  id: string;
+  name: string;
+  query: string;
+  color: string;
+  icon: string | null;
+  position: number;
+};
 
 const PRIORITY_COLORS: Record<number, string> = {
   1: "text-red-500",
@@ -121,6 +133,8 @@ const KANBAN_COLUMNS = [
 function TasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+  const [filterDialog, setFilterDialog] = useState<SavedFilter | { isNew: true } | null>(null);
   const [filter, setFilter] = useState<Filter>({ kind: "inbox" });
   const [view, setView] = useState<"list" | "kanban">("list");
   const [quickAdd, setQuickAdd] = useState("");
@@ -167,14 +181,21 @@ function TasksPage() {
   }, [authLoading, userId]);
 
   async function loadAll() {
-    const [{ data: p, error: projectsError }, { data: t, error: tasksError }] = await Promise.all([
+    const [
+      { data: p, error: projectsError },
+      { data: t, error: tasksError },
+      { data: f, error: filtersError },
+    ] = await Promise.all([
       supabase.from("projects").select("*").order("position"),
       supabase.from("tasks").select("*").order("position"),
+      supabase.from("filters").select("*").order("position"),
     ]);
     if (projectsError) toast.error(projectsError.message);
     if (tasksError) toast.error(tasksError.message);
+    if (filtersError) toast.error(filtersError.message);
     setProjects(p ?? []);
     setTasks(t ?? []);
+    setSavedFilters((f as SavedFilter[]) ?? []);
   }
 
   async function requireUserId() {
@@ -225,8 +246,15 @@ function TasksPage() {
       );
     else if (filter.kind === "project")
       list = list.filter((t) => t.project_id === filter.id);
+    else if (filter.kind === "saved") {
+      const sf = savedFilters.find((x) => x.id === filter.id);
+      if (sf) {
+        const pred = compileFilter(sf.query);
+        list = list.filter((t) => pred(t as any, projects));
+      }
+    }
     return list;
-  }, [tasks, filter]);
+  }, [tasks, filter, savedFilters, projects]);
 
   const filterTitle =
     filter.kind === "inbox"
@@ -235,7 +263,61 @@ function TasksPage() {
         ? "Today"
         : filter.kind === "upcoming"
           ? "Upcoming"
-          : projects.find((p) => p.id === filter.id)?.name ?? "Project";
+          : filter.kind === "project"
+            ? projects.find((p) => p.id === filter.id)?.name ?? "Project"
+            : savedFilters.find((s) => s.id === filter.id)?.name ?? "Filter";
+
+  async function saveFilter(payload: {
+    id?: string;
+    name: string;
+    query: string;
+    color: string;
+  }) {
+    const currentUserId = await requireUserId();
+    if (!currentUserId) return;
+    if (payload.id) {
+      const { data, error } = await supabase
+        .from("filters")
+        .update({
+          name: payload.name,
+          query: payload.query,
+          color: payload.color,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", payload.id)
+        .select()
+        .single();
+      if (error) return toast.error(error.message);
+      setSavedFilters((s) =>
+        s.map((x) => (x.id === payload.id ? (data as SavedFilter) : x)),
+      );
+    } else {
+      const { data, error } = await supabase
+        .from("filters")
+        .insert({
+          user_id: currentUserId,
+          name: payload.name,
+          query: payload.query,
+          color: payload.color,
+          position: savedFilters.length,
+        })
+        .select()
+        .single();
+      if (error) return toast.error(error.message);
+      const inserted = data as SavedFilter;
+      setSavedFilters((s) => [...s, inserted]);
+      setFilter({ kind: "saved", id: inserted.id });
+    }
+    setFilterDialog(null);
+    toast.success("Filter saved");
+  }
+
+  async function deleteSavedFilter(id: string) {
+    if (!confirm("Delete this filter?")) return;
+    await supabase.from("filters").delete().eq("id", id);
+    setSavedFilters((s) => s.filter((x) => x.id !== id));
+    if (filter.kind === "saved" && filter.id === id) setFilter({ kind: "today" });
+  }
 
   async function addQuick() {
     if (creatingTask) return;
