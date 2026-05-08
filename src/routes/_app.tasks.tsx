@@ -40,6 +40,8 @@ import {
   CheckCircle2,
   Circle,
   Sparkles,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
