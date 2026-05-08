@@ -67,7 +67,6 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
-import { Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
