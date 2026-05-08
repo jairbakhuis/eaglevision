@@ -1,108 +1,116 @@
-## Goal
+## What we're building (in order)
 
-Make the task input feel "telepathic" like Todoist, plus add the power-user features that established to-do apps have proven valuable. We don't reinvent — we copy what already works.
-
-## 1. Smart natural-language quick add (the headline feature)
-
-Type one line, parser extracts metadata and shows colored chips inline before submit (so you see what was understood and can confirm/edit).
-
-**Date & time**
-- `today`, `tomorrow`, `tom`, `tonight`, `next week`, `next monday`, `mon`, `in 3 days`, `in 2 weeks`
-- Specific: `25 dec`, `dec 25`, `25/12`, `2026-01-15`
-- Times: `at 14:00`, `at 2pm`, `9am`, `noon`, `midnight`
-- Combined: `buy skittles tomorrow at 2pm`
-
-**Recurring**
-- `every day`, `every monday`, `every weekday`, `every 2 weeks`, `every month`, `every 1st`, `every last friday`
-
-**Priority**
-- `p1`, `p2`, `p3`, `p4` (Todoist convention; P1 = urgent)
-- `!!!` shortcut
-
-**Project / labels**
-- `#projectname` → routes into that project (autocomplete dropdown)
-- `@label` → tag (autocomplete)
-
-**Duration / reminder (lightweight)**
-- `for 30m`, `for 2h` → duration
-- `*30m before` → reminder offset
-
-Library: use `chrono-node` (battle-tested NLP date parser, handles all the above for English) + a thin custom layer for `#`, `@`, `p1`, `every …`.
-
-## 2. Recurring tasks
-
-When a recurring task is completed, auto-create the next instance based on the rule. Show 🔁 icon. Common patterns: daily, weekly on weekday, monthly on date, every N days.
-
-## 3. Smart Inbox & Today behavior
-
-- **Postpone / Reschedule menu**: Today, Tomorrow, This weekend, Next week, No date, Pick date.
-- **Bulk reschedule**: select multiple → move all.
-- **Drag-into-day**: from Upcoming, drag onto another day.
-
-## 4. Sections inside projects
-
-Lightweight subdivisions (e.g. "Shopping" project → "Groceries / Hardware"). Already partly possible via subtasks, but a flat "section" header is more usable for grouping.
-
-## 5. Filters & saved views
-
-User-defined filter expressions like `today & p1`, `@home`, `overdue`, `7 days & #work`. Save as named view in sidebar. (Todoist's killer power-user feature.)
-
-## 6. Reminders & notifications
-
-- Browser web push at the due time.
-- "Smart reminder": if task has a time, remind 10 min before by default.
-
-## 7. Productivity & habit features
-
-- **Streaks / completion stats** (Todoist Karma, TickTick habit). Already partially in dashboard plan — wire it up.
-- **Daily goal**: e.g. "complete 5 tasks today" with progress ring.
-
-## 8. Inline polish
-
-- **Markdown in titles & description** (links, bold).
-- **Comments** on tasks.
-- **Task duplicate / convert to subtask** via right-click.
-- **Keyboard shortcuts**: `q` quick-add anywhere, `t` set today, `enter` save, `cmd+k` command palette.
-
-## 9. AI assists (we already have Lovable AI — leverage it)
-
-- "Plan my day" → AI orders today's tasks by priority/dependencies.
-- "Break this task into subtasks" button.
-- "Capture from text/image": paste a meeting note or screenshot → AI extracts tasks with dates (Todoist's newest feature; we can match it cheaply via Gemini vision).
-
-## 10. Calendar 2-way
-
-- Drag tasks on calendar to reschedule (already planned).
-- Show time-blocked tasks as events with duration.
+You picked four areas. I checked the code: `_app.calendar.tsx` is only **7 lines — a stub**, not a polish job. So calendar is a real build, not a tweak. Re-ordered accordingly.
 
 ---
 
-## Recommended build order (incremental, each shippable)
+### 1. Saved filters & custom views  *(primary focus)*
 
-1. **Smart quick-add parser (chrono-node + projects/labels/priority/recurring)** — biggest perceived upgrade, fixes your skittles example today.
-2. **Recurring task engine** — auto-spawns next instance on complete.
-3. **Reschedule menu + Today/Tomorrow/Next-week shortcuts**.
-4. **Saved filters / custom views**.
-5. **AI: Plan my day + Break into subtasks**.
-6. **Web push reminders**.
-7. **Sections, comments, keyboard shortcuts, polish**.
+Todoist's killer feature: type a query, save it, pin it in the sidebar.
+
+**New table** `filters`: `id, user_id, name, query, icon, color, position, created_at`. RLS = own-only.
+
+**Query language** (start small, extend later):
+```
+today              — due today or overdue
+overdue
+upcoming           — due in next 7 days
+no date
+inbox
+p1 / p2 / p3 / p4
+#projectname
+@label
+done
+&  (and)   |  (or)   !  (not)
+```
+Examples:
+- `today & p1`
+- `overdue | (today & #work)`
+- `@home & !done`
+- `7 days & #personal`
+
+Parser: tokenize → recursive-descent → returns a predicate `(task, projects) => boolean`. Pure JS, ~150 LOC.
+
+**UI**:
+- Sidebar gets a **Filters** section under Projects. `+` button → dialog with name, icon, color, query input with **live preview** count + first 5 matching tasks.
+- Click filter → `setFilter({ kind: "saved", id })` rendering filtered tasks.
+- Right-click → Edit / Delete / Reorder (drag).
+- Add 3 starter filters seeded on first visit: **Today + P1**, **Overdue**, **No date**.
+
+---
+
+### 2. Calendar — real build (stub today)
+
+The existing `_app.calendar.tsx` has 7 lines. Build:
+- **Month / Week / Day** view toggle.
+- Renders all tasks with `due_date`, color-coded by project.
+- **Drag a task** to a new day/time → updates `due_date` (uses `dnd-kit` already installed).
+- Click empty day → quick-add task pre-filled with that date.
+- Click task → opens existing TaskEditor.
+- Recurring tasks show 🔁 badge; show only the next occurrence (don't fan out the whole rrule yet).
+- Today highlighted, week starts Monday (matches existing `isThisWeek` config).
+
+Library: build with native CSS grid + date-fns (already installed). No heavy calendar library needed for v1.
+
+---
+
+### 3. Documents & Notes upgrades
+
+**Notes (328 LOC currently — basic markdown)**
+- Full-text search across title + content (already have `search tsvector` column — just wire it up with `to_tsquery`).
+- Tag chips with click-to-filter.
+- "Send to chat as context" button → opens chat with note pre-loaded as system context.
+
+**Documents (388 LOC, basic page tree)**
+- **Slash menu** (`/`) for inserting blocks: H1, H2, bullet, checkbox, code, divider, quote.
+- **Markdown shortcuts** while typing: `# `, `## `, `- `, `[] `, `> `, ``` ``` `.
+- **Drag-to-reorder** pages in the tree (dnd-kit).
+- "Ask AI about this page" inline button → opens chat with page as context.
+- Export current page as Markdown (one-click download).
+
+(Skipping image uploads, embeds, backlinks, cover images for v1 — bigger lift, push to a later round.)
+
+---
+
+### 4. Chat upgrades
+
+- **Streaming response polish**: typewriter cursor, stop button, regenerate.
+- **Image attach** for vision models (Gemini 2.5 Flash, GPT-5) — uploads to Supabase storage, sent as `image_url` content part.
+- **Conversation search** in left rail (matches title + first message).
+- **Per-conversation system prompt** editor (column already exists).
+- **Edit & resend** a previous user message — truncates conversation at that point.
+
+---
+
+## Build order across messages
+
+To keep each iteration shippable and reviewable:
+
+1. **Filters** (table + parser + sidebar UI + dialog) — one build.
+2. **Calendar** Month + Week views with drag-to-reschedule — one build.
+3. **Calendar** Day view + click-to-create + recurring badge — small follow-up.
+4. **Notes** search + chat-context button — one build.
+5. **Documents** slash menu + markdown shortcuts + drag pages — one build.
+6. **Documents** "ask AI" + export — small follow-up.
+7. **Chat** streaming polish + edit/resend + search — one build.
+8. **Chat** image attachments — one build (needs storage bucket).
+
+You don't have to commit to all 8 — we can stop after any step.
+
+---
 
 ## Technical notes
 
-- Add `chrono-node` (`bun add chrono-node`) — pure JS, Worker-safe.
-- Recurrence: store `rrule` string on `tasks` (`rrule` npm package, also Worker-safe) — no schema migration needed beyond adding `rrule text` and `reminder_at timestamptz` columns.
-- Filters: store as rows in a new `filters` table (`name`, `query`, `position`).
-- Notifications: Web Push API + service worker; store subscription server-side.
-- AI features: existing `chat` edge function + structured JSON output.
+- Filter parser lives in `src/lib/filterQuery.ts`, returns `(task, projects, allTasks) => boolean` plus a `tokenize()` helper for the live-preview chips.
+- Calendar uses CSS grid, no extra deps.
+- Slash menu uses existing `cmdk` (`@/components/ui/command`).
+- Image upload needs a new `chat-images` storage bucket with user-folder RLS.
+- All new server logic stays in the existing `chat` edge function or direct Supabase calls (no new edge functions for steps 1–7).
 
 ---
 
-## Decision needed before I implement
+## What I'm starting with
 
-Pick what to build first (or "all of #1"):
+**Step 1: Saved filters & custom views** — biggest power-user payoff and unblocks better Today/Overdue muscle memory.
 
-- **A.** Just smart quick-add + recurring (steps 1–2). Fastest path to your skittles example. ~1 build.
-- **B.** A + reschedule shortcuts + saved filters (steps 1–4). Full Todoist-class core. ~2–3 builds.
-- **C.** Full plan (1–7) phased over several iterations.
-
-Tell me A / B / C (or pick specific numbers) and I'll implement.
+Reply "go" (or pick a different starting step) and I'll implement.
