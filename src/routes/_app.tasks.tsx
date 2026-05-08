@@ -415,6 +415,55 @@ function TasksPage() {
       {/* Main */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl p-6">
+          <div className="mb-4 space-y-3 md:hidden">
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant={filter.kind === "today" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "today" })}
+              >
+                Today
+              </Button>
+              <Button
+                variant={filter.kind === "upcoming" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "upcoming" })}
+              >
+                Upcoming
+              </Button>
+              <Button
+                variant={filter.kind === "inbox" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFilter({ kind: "inbox" })}
+              >
+                Inbox
+              </Button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewProjectOpen(true)}
+                disabled={authLoading}
+                className="shrink-0 gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Project
+              </Button>
+              {projects.map((p) => (
+                <Button
+                  key={p.id}
+                  variant={filter.kind === "project" && filter.id === p.id ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setFilter({ kind: "project", id: p.id })}
+                  className="shrink-0 gap-1.5"
+                >
+                  <Hash className="h-3.5 w-3.5" style={{ color: p.color }} />
+                  {p.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Dashboard */}
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard
@@ -477,7 +526,7 @@ function TasksPage() {
               placeholder="Add a task and press Enter…"
               className="flex-1"
             />
-            <Button onClick={addQuick}>
+            <Button onClick={addQuick} disabled={authLoading}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
