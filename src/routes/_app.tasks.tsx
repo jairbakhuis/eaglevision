@@ -1319,8 +1319,8 @@ function RecurrenceField({
 
       {mode === "preset" ? (
         <Select
-          value={value ?? ""}
-          onValueChange={(v) => onChange(v === "" ? null : v)}
+          value={value || "__none__"}
+          onValueChange={(v) => onChange(v === "__none__" ? null : v)}
         >
           <SelectTrigger>
             <SelectValue />
