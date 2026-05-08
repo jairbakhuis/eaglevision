@@ -68,7 +68,7 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
-import { RRule, Frequency } from "rrule";
+import { RRule } from "rrule";
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
