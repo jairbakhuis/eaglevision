@@ -89,6 +89,7 @@ type Task = {
   project_id: string | null;
   position: number;
   completed_at: string | null;
+  parent_task_id: string | null;
 };
 
 type Filter =
