@@ -233,7 +233,7 @@ function TasksPage() {
     setQuickAdd("");
     const projectId = filter.kind === "project" ? filter.id : null;
     const due =
-      filter.kind === "today"
+      filter.kind === "today" || filter.kind === "upcoming"
         ? endOfDay(new Date()).toISOString()
         : null;
     const { data, error } = await supabase
@@ -249,8 +249,19 @@ function TasksPage() {
       })
       .select()
       .single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      setQuickAdd(text);
+      return toast.error(error.message);
+    }
     setTasks((t) => [...t, data as Task]);
+    // If the current filter would hide the new task, jump to Inbox so the user sees it.
+    const inserted = data as Task;
+    const visibleHere =
+      (filter.kind === "inbox" && !inserted.project_id) ||
+      (filter.kind === "today" && inserted.due_date) ||
+      (filter.kind === "upcoming" && inserted.due_date) ||
+      (filter.kind === "project" && inserted.project_id === filter.id);
+    if (!visibleHere) setFilter({ kind: "inbox" });
     toast.success("Task created");
   }
 
