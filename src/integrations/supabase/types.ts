@@ -96,6 +96,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          search: unknown
           tags: string[]
           title: string
           updated_at: string
@@ -105,6 +106,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          search?: unknown
           tags?: string[]
           title?: string
           updated_at?: string
@@ -114,6 +116,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          search?: unknown
           tags?: string[]
           title?: string
           updated_at?: string
@@ -131,6 +134,8 @@ export type Database = {
           is_favorite: boolean
           parent_id: string | null
           position: number
+          project_id: string | null
+          search: unknown
           title: string
           updated_at: string
           user_id: string
@@ -144,6 +149,8 @@ export type Database = {
           is_favorite?: boolean
           parent_id?: string | null
           position?: number
+          project_id?: string | null
+          search?: unknown
           title?: string
           updated_at?: string
           user_id: string
@@ -157,6 +164,8 @@ export type Database = {
           is_favorite?: boolean
           parent_id?: string | null
           position?: number
+          project_id?: string | null
+          search?: unknown
           title?: string
           updated_at?: string
           user_id?: string
@@ -167,6 +176,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -193,6 +209,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          description: string | null
           icon: string | null
           id: string
           name: string
@@ -203,6 +220,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          description?: string | null
           icon?: string | null
           id?: string
           name: string
@@ -213,6 +231,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          description?: string | null
           icon?: string | null
           id?: string
           name?: string
@@ -229,10 +248,13 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          parent_task_id: string | null
           position: number
           priority: number
           project_id: string | null
+          search: unknown
           status: string
+          tags: string[]
           title: string
           updated_at: string
           user_id: string
@@ -243,10 +265,13 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          parent_task_id?: string | null
           position?: number
           priority?: number
           project_id?: string | null
+          search?: unknown
           status?: string
+          tags?: string[]
           title: string
           updated_at?: string
           user_id: string
@@ -257,15 +282,25 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          parent_task_id?: string | null
           position?: number
           priority?: number
           project_id?: string | null
+          search?: unknown
           status?: string
+          tags?: string[]
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
