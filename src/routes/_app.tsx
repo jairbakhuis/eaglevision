@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app")({
@@ -17,15 +18,18 @@ function AppLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar />
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
         <div className="flex flex-1 flex-col">
-          <header className="flex h-12 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur">
+          <header className="hidden md:flex h-12 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur">
             <SidebarTrigger />
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="ios-scroll flex-1 overflow-auto pb-[calc(env(safe-area-inset-bottom)+64px)] md:pb-0">
             <Outlet />
           </main>
         </div>
+        <MobileTabBar />
       </div>
     </SidebarProvider>
   );
