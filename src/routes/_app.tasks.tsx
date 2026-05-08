@@ -68,9 +68,11 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
-import { RRule } from "rrule/dist/esm/index.js";
+import rrulePkg from "rrule";
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
+
+const { RRule } = rrulePkg;
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
