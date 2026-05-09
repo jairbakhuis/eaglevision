@@ -961,6 +961,7 @@ function ListView({
       arr.push(t);
       map.set(t.parent_task_id, arr);
     }
+    for (const arr of map.values()) arr.sort((a, b) => a.position - b.position);
     return map;
   }, [allTasks]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -973,68 +974,86 @@ function ListView({
       else next.add(id);
       return next;
     });
+
+  // Recursive progress: completed leaf descendants / total leaf descendants.
+  // Falls back to direct children stats when there are no descendants.
+  function progress(taskId: string): { done: number; total: number } {
+    const kids = childrenByParent.get(taskId) ?? [];
+    if (kids.length === 0) return { done: 0, total: 0 };
+    let done = 0;
+    let total = 0;
+    for (const k of kids) {
+      const sub = progress(k.id);
+      if (sub.total === 0) {
+        total += 1;
+        if (k.status === "done") done += 1;
+      } else {
+        total += sub.total;
+        done += sub.done;
+      }
+    }
+    return { done, total };
+  }
+
+  function renderNode(t: Task, depth: number): React.ReactNode {
+    const subs = childrenByParent.get(t.id) ?? [];
+    const isCollapsed = collapsed.has(t.id);
+    const prog = progress(t.id);
+    return (
+      <div key={t.id}>
+        <TaskRow
+          task={t}
+          project={projects.find((p) => p.id === t.project_id) ?? null}
+          onToggle={onToggle}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          depth={depth}
+          hasChildren={subs.length > 0}
+          collapsed={isCollapsed}
+          progress={prog}
+          onToggleCollapse={() => toggle(t.id)}
+          onAddSubtask={() => {
+            setAddingFor(t.id);
+            setSubDraft("");
+            setCollapsed((prev) => {
+              const next = new Set(prev);
+              next.delete(t.id);
+              return next;
+            });
+          }}
+        />
+        {!isCollapsed && subs.map((s) => renderNode(s, depth + 1))}
+        {addingFor === t.id && (
+          <div
+            className="flex items-center gap-2 border-l-2 border-border/60 bg-muted/20 py-1.5 pr-3"
+            style={{ paddingLeft: 12 + (depth + 1) * 20 }}
+          >
+            <Input
+              autoFocus
+              value={subDraft}
+              onChange={(e) => setSubDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onAddSubtask(t, subDraft);
+                  setSubDraft("");
+                  setAddingFor(null);
+                } else if (e.key === "Escape") {
+                  setAddingFor(null);
+                }
+              }}
+              onBlur={() => setAddingFor(null)}
+              placeholder="Subtask title — Enter to add, Esc to cancel"
+              className="h-7 text-xs"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y divide-border rounded-lg border border-border bg-card">
-      {tasks.map((t) => {
-        const subs = childrenByParent.get(t.id) ?? [];
-        const isCollapsed = collapsed.has(t.id);
-        return (
-          <div key={t.id}>
-            <TaskRow
-              task={t}
-              project={projects.find((p) => p.id === t.project_id) ?? null}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              hasChildren={subs.length > 0}
-              collapsed={isCollapsed}
-              onToggleCollapse={() => toggle(t.id)}
-              onAddSubtask={() => {
-                setAddingFor(t.id);
-                setSubDraft("");
-                setCollapsed((prev) => {
-                  const next = new Set(prev);
-                  next.delete(t.id);
-                  return next;
-                });
-              }}
-            />
-            {!isCollapsed &&
-              subs.map((s) => (
-                <TaskRow
-                  key={s.id}
-                  task={s}
-                  project={projects.find((p) => p.id === s.project_id) ?? null}
-                  onToggle={onToggle}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  isSubtask
-                />
-              ))}
-            {addingFor === t.id && (
-              <div className="flex items-center gap-2 border-l-2 border-border/60 bg-muted/20 py-1.5 pl-[36px] pr-3">
-                <Input
-                  autoFocus
-                  value={subDraft}
-                  onChange={(e) => setSubDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onAddSubtask(t, subDraft);
-                      setSubDraft("");
-                      setAddingFor(null);
-                    } else if (e.key === "Escape") {
-                      setAddingFor(null);
-                    }
-                  }}
-                  onBlur={() => setAddingFor(null)}
-                  placeholder="Subtask title — Enter to add, Esc to cancel"
-                  className="h-7 text-xs"
-                />
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {tasks.map((t) => renderNode(t, 0))}
     </div>
   );
 }
@@ -1045,9 +1064,10 @@ function TaskRow({
   onToggle,
   onEdit,
   onDelete,
-  isSubtask,
+  depth = 0,
   hasChildren,
   collapsed,
+  progress,
   onToggleCollapse,
   onAddSubtask,
 }: {
@@ -1056,37 +1076,38 @@ function TaskRow({
   onToggle: (t: Task) => void;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
-  isSubtask?: boolean;
+  depth?: number;
   hasChildren?: boolean;
   collapsed?: boolean;
+  progress?: { done: number; total: number };
   onToggleCollapse?: () => void;
   onAddSubtask?: () => void;
 }) {
   const done = task.status === "done";
   const overdue =
     task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date)) && !done;
+  const isSubtask = depth > 0;
   return (
     <div
       className={cn(
         "group flex items-center gap-2 px-3 py-2.5 hover:bg-accent/40",
-        isSubtask && "border-l-2 border-border/60 bg-muted/20 py-1.5 pl-[36px]",
+        isSubtask && "border-l-2 border-border/60 bg-muted/20 py-1.5",
       )}
+      style={isSubtask ? { paddingLeft: 12 + depth * 20 } : undefined}
     >
-      {!isSubtask && (
-        <button
-          onClick={hasChildren ? onToggleCollapse : undefined}
-          className={cn(
-            "flex h-4 w-4 items-center justify-center text-muted-foreground",
-            !hasChildren && "invisible",
-          )}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
-        </button>
-      )}
+      <button
+        onClick={hasChildren ? onToggleCollapse : undefined}
+        className={cn(
+          "flex h-4 w-4 items-center justify-center text-muted-foreground",
+          !hasChildren && "invisible",
+        )}
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronDown className="h-3.5 w-3.5" />
+        )}
+      </button>
       <Checkbox checked={done} onCheckedChange={() => onToggle(task)} />
       <div className="flex-1 cursor-pointer" onClick={() => onEdit(task)}>
         <div
@@ -1117,9 +1138,21 @@ function TaskRow({
               <Repeat className="h-3 w-3" />
             </span>
           )}
+          {progress && progress.total > 0 && (
+            <span
+              className={cn(
+                "flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-medium tabular-nums",
+                progress.done === progress.total && "text-emerald-600 dark:text-emerald-400",
+              )}
+              title={`${progress.done} of ${progress.total} subtasks complete`}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              {progress.done}/{progress.total}
+            </span>
+          )}
         </div>
       </div>
-      {!isSubtask && onAddSubtask && (
+      {onAddSubtask && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1280,10 +1313,36 @@ function TaskEditor({
   const [draft, setDraft] = useState<Task | null>(task);
   useEffect(() => setDraft(task), [task]);
 
+  // Any task can be a parent except the task itself or any of its descendants
+  // (otherwise we create a cycle). Computed before the early-return to keep
+  // hook order stable.
+  const descendantIds = useMemo(() => {
+    if (!draft) return new Set<string>();
+    const out = new Set<string>();
+    const childrenByParent = new Map<string, Task[]>();
+    for (const t of allTasks) {
+      if (!t.parent_task_id) continue;
+      const arr = childrenByParent.get(t.parent_task_id) ?? [];
+      arr.push(t);
+      childrenByParent.set(t.parent_task_id, arr);
+    }
+    const stack = [draft.id];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const c of childrenByParent.get(id) ?? []) {
+        if (!out.has(c.id)) {
+          out.add(c.id);
+          stack.push(c.id);
+        }
+      }
+    }
+    return out;
+  }, [allTasks, draft?.id]);
+
   if (!draft) return null;
 
   const parentCandidates = allTasks.filter(
-    (t) => !t.parent_task_id && t.id !== draft.id,
+    (t) => t.id !== draft.id && !descendantIds.has(t.id),
   );
 
   return (
