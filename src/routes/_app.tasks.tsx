@@ -626,7 +626,7 @@ function TasksPage() {
 
       {/* Main */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl p-4 md:p-6">
+        <div className="mx-auto max-w-7xl p-4 md:px-10 md:py-8">
           {/* Mobile filter pills — compact, single scrollable row */}
           <div className="-mx-4 mb-3 flex gap-1.5 overflow-x-auto px-4 pb-1 md:hidden">
             {[
@@ -671,8 +671,58 @@ function TasksPage() {
             </button>
           </div>
 
+          {/* Header — title + subtitle on the left, actions on the right */}
+          <div className="mb-8 hidden items-start justify-between gap-6 md:flex">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">{filterTitle}</h1>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Keep tasks moving through your workflow.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5 rounded-full border border-border bg-card p-1">
+                <button
+                  onClick={() => setView("kanban")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+                    view === "kanban"
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Columns3 className="h-3.5 w-3.5" /> Board
+                </button>
+                <button
+                  onClick={() => setView("list")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+                    view === "list"
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <LayoutList className="h-3.5 w-3.5" /> List
+                </button>
+              </div>
+              <button
+                onClick={() => setShowCompleted((v) => !v)}
+                title={showCompleted ? "Hide completed" : "Show completed"}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground"
+              >
+                {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => quickAddRef.current?.focus()}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:opacity-90"
+                title="Add task"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
           {/* Dashboard — desktop only */}
-          <div className="mb-6 hidden grid-cols-2 gap-3 md:grid md:grid-cols-4">
+          <div className="mb-8 hidden grid-cols-2 gap-4 md:grid md:grid-cols-4">
             <StatCard
               icon={<Circle className="h-4 w-4" />}
               label="Open"
@@ -696,53 +746,18 @@ function TasksPage() {
             />
           </div>
 
-          {/* Header */}
-          <div className="mb-4 flex items-center justify-between">
+          {/* Mobile-only header */}
+          <div className="mb-4 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight md:text-2xl md:font-semibold">{filterTitle}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{filterTitle}</h1>
               <Badge variant="secondary">{filtered.length}</Badge>
             </div>
-            <div className="hidden gap-1 rounded-md border border-border bg-card p-0.5 md:flex">
-              <button
-                onClick={() => setView("list")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition",
-                  view === "list" ? "bg-accent text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <LayoutList className="h-3.5 w-3.5" /> List
-              </button>
-              <button
-                onClick={() => setView("kanban")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition",
-                  view === "kanban" ? "bg-accent text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <Columns3 className="h-3.5 w-3.5" /> Kanban
-              </button>
-            </div>
-            <button
-              onClick={() => setShowCompleted((v) => !v)}
-              title={showCompleted ? "Hide completed" : "Show completed"}
-              className={cn(
-                "ml-2 hidden items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium transition md:flex",
-                showCompleted ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {showCompleted ? (
-                <Eye className="h-3.5 w-3.5" />
-              ) : (
-                <EyeOff className="h-3.5 w-3.5" />
-              )}
-              {showCompleted ? "Hide done" : "Show done"}
-            </button>
           </div>
 
           {/* Quick add */}
           <form
             data-no-swipe
-            className="mb-4"
+            className="mb-6"
             onSubmit={(e) => {
               e.preventDefault();
               addQuick();
