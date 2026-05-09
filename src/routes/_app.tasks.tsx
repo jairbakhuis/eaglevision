@@ -1315,8 +1315,31 @@ function TaskEditor({
 
   if (!draft) return null;
 
+  // Any task can be a parent except the task itself or any of its descendants
+  // (otherwise we create a cycle).
+  const descendantIds = useMemo(() => {
+    const out = new Set<string>();
+    const childrenByParent = new Map<string, Task[]>();
+    for (const t of allTasks) {
+      if (!t.parent_task_id) continue;
+      const arr = childrenByParent.get(t.parent_task_id) ?? [];
+      arr.push(t);
+      childrenByParent.set(t.parent_task_id, arr);
+    }
+    const stack = [draft.id];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const c of childrenByParent.get(id) ?? []) {
+        if (!out.has(c.id)) {
+          out.add(c.id);
+          stack.push(c.id);
+        }
+      }
+    }
+    return out;
+  }, [allTasks, draft.id]);
   const parentCandidates = allTasks.filter(
-    (t) => !t.parent_task_id && t.id !== draft.id,
+    (t) => t.id !== draft.id && !descendantIds.has(t.id),
   );
 
   return (
