@@ -1313,11 +1313,11 @@ function TaskEditor({
   const [draft, setDraft] = useState<Task | null>(task);
   useEffect(() => setDraft(task), [task]);
 
-  if (!draft) return null;
-
   // Any task can be a parent except the task itself or any of its descendants
-  // (otherwise we create a cycle).
+  // (otherwise we create a cycle). Computed before the early-return to keep
+  // hook order stable.
   const descendantIds = useMemo(() => {
+    if (!draft) return new Set<string>();
     const out = new Set<string>();
     const childrenByParent = new Map<string, Task[]>();
     for (const t of allTasks) {
@@ -1337,7 +1337,10 @@ function TaskEditor({
       }
     }
     return out;
-  }, [allTasks, draft.id]);
+  }, [allTasks, draft?.id]);
+
+  if (!draft) return null;
+
   const parentCandidates = allTasks.filter(
     (t) => t.id !== draft.id && !descendantIds.has(t.id),
   );
