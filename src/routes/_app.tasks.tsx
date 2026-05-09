@@ -626,7 +626,7 @@ function TasksPage() {
 
       {/* Main */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl p-4 md:px-10 md:py-8">
+        <div className="p-4 md:px-10 md:py-8">
           {/* Mobile filter pills — compact, single scrollable row */}
           <div className="-mx-4 mb-3 flex gap-1.5 overflow-x-auto px-4 pb-1 md:hidden">
             {[
@@ -1254,7 +1254,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-h-[420px] flex-col rounded-2xl border border-border/70 bg-card/60 p-4 transition",
+        "flex min-h-[calc(100vh-22rem)] flex-col rounded-2xl border border-border/70 bg-card/60 p-4 transition",
         isOver && "ring-2 ring-primary/40",
       )}
     >
