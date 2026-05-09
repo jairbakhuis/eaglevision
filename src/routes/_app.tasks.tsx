@@ -73,11 +73,11 @@ import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
 
 type RRuleModule = typeof import("rrule");
-const rruleCompat = rruleNamespace as unknown as RRuleModule & {
+const rruleCompat = rruleNamespace as unknown as Partial<RRuleModule> & {
   default?: RRuleModule;
   rrule?: RRuleModule;
 };
-const rrulePkg = ("RRule" in rruleCompat ? rruleCompat : rruleCompat.default ?? rruleCompat.rrule ?? rruleCompat) as RRuleModule;
+const rrulePkg = (rruleCompat.RRule ? rruleCompat : rruleCompat.default ?? rruleCompat.rrule) as RRuleModule;
 const { RRule } = rrulePkg;
 
 export const Route = createFileRoute("/_app/tasks")({
