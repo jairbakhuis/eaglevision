@@ -626,58 +626,53 @@ function TasksPage() {
 
       {/* Main */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl p-6">
-          <div className="mb-4 space-y-3 md:hidden">
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                variant={filter.kind === "today" ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setFilter({ kind: "today" })}
+        <div className="mx-auto max-w-5xl p-4 md:p-6">
+          {/* Mobile filter pills — compact, single scrollable row */}
+          <div className="-mx-4 mb-3 flex gap-1.5 overflow-x-auto px-4 pb-1 md:hidden">
+            {[
+              { k: "today" as const, label: "Today" },
+              { k: "upcoming" as const, label: "Upcoming" },
+              { k: "inbox" as const, label: "Inbox" },
+            ].map((f) => (
+              <button
+                key={f.k}
+                onClick={() => setFilter({ kind: f.k })}
+                className={cn(
+                  "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition",
+                  filter.kind === f.k
+                    ? "bg-foreground text-background"
+                    : "bg-card text-muted-foreground",
+                )}
               >
-                Today
-              </Button>
-              <Button
-                variant={filter.kind === "upcoming" ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setFilter({ kind: "upcoming" })}
+                {f.label}
+              </button>
+            ))}
+            {projects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setFilter({ kind: "project", id: p.id })}
+                className={cn(
+                  "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition flex items-center gap-1",
+                  filter.kind === "project" && filter.id === p.id
+                    ? "bg-foreground text-background"
+                    : "bg-card text-muted-foreground",
+                )}
               >
-                Upcoming
-              </Button>
-              <Button
-                variant={filter.kind === "inbox" ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setFilter({ kind: "inbox" })}
-              >
-                Inbox
-              </Button>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNewProjectOpen(true)}
-                disabled={authLoading}
-                className="shrink-0 gap-1.5"
-              >
-                <Plus className="h-3.5 w-3.5" /> Project
-              </Button>
-              {projects.map((p) => (
-                <Button
-                  key={p.id}
-                  variant={filter.kind === "project" && filter.id === p.id ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setFilter({ kind: "project", id: p.id })}
-                  className="shrink-0 gap-1.5"
-                >
-                  <Hash className="h-3.5 w-3.5" style={{ color: p.color }} />
-                  {p.name}
-                </Button>
-              ))}
-            </div>
+                <Hash className="h-3 w-3" style={{ color: p.color }} />
+                {p.name}
+              </button>
+            ))}
+            <button
+              onClick={() => setNewProjectOpen(true)}
+              disabled={authLoading}
+              className="shrink-0 rounded-full bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
+            >
+              <Plus className="inline h-3 w-3" />
+            </button>
           </div>
 
-          {/* Dashboard */}
-          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {/* Dashboard — desktop only */}
+          <div className="mb-6 hidden grid-cols-2 gap-3 md:grid md:grid-cols-4">
             <StatCard
               icon={<Circle className="h-4 w-4" />}
               label="Open"
@@ -704,10 +699,10 @@ function TasksPage() {
           {/* Header */}
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{filterTitle}</h1>
+              <h1 className="text-3xl font-bold tracking-tight md:text-2xl md:font-semibold">{filterTitle}</h1>
               <Badge variant="secondary">{filtered.length}</Badge>
             </div>
-            <div className="flex gap-1 rounded-md border border-border bg-card p-0.5">
+            <div className="hidden gap-1 rounded-md border border-border bg-card p-0.5 md:flex">
               <button
                 onClick={() => setView("list")}
                 className={cn(
@@ -731,7 +726,7 @@ function TasksPage() {
               onClick={() => setShowCompleted((v) => !v)}
               title={showCompleted ? "Hide completed" : "Show completed"}
               className={cn(
-                "ml-2 flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium transition",
+                "ml-2 hidden items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium transition md:flex",
                 showCompleted ? "text-foreground" : "text-muted-foreground",
               )}
             >
