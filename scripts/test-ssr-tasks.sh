@@ -38,9 +38,9 @@ esac
 if grep -q '"unhandled":true' "$BODY"; then
   echo "[ssr-test] FAIL: h3 swallowed SSR error"; FAIL=1
 fi
-if grep -qiE 'does not provide an export named|Cannot read properties of undefined' "$BODY" "$LOG"; then
+if grep -qiE 'does not provide an export named|Named export .* not found|CommonJS module|Cannot read properties of undefined' "$BODY" "$LOG"; then
   echo "[ssr-test] FAIL: runtime error markers found"
-  grep -iE 'does not provide an export named|Cannot read properties of undefined' "$BODY" "$LOG" | head -5
+  grep -iE 'does not provide an export named|Named export .* not found|CommonJS module|Cannot read properties of undefined' "$BODY" "$LOG" | head -5
   FAIL=1
 fi
 

@@ -1,5 +1,14 @@
 import * as chrono from "chrono-node";
-import { RRule, Frequency } from "rrule";
+import * as rruleNamespace from "rrule";
+
+type RRuleModule = typeof import("rrule");
+const rruleCompat = rruleNamespace as unknown as RRuleModule & {
+  default?: RRuleModule;
+  rrule?: RRuleModule;
+};
+const rrulePkg = ("RRule" in rruleCompat ? rruleCompat : rruleCompat.default ?? rruleCompat.rrule ?? rruleCompat) as RRuleModule;
+const { RRule, Frequency } = rrulePkg;
+
 type RRuleInstance = InstanceType<typeof RRule>;
 
 export type ParsedTask = {
