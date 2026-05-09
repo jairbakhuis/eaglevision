@@ -68,9 +68,17 @@ import {
   endOfDay,
 } from "date-fns";
 import { parseTask, nextOccurrence } from "@/lib/taskParser";
-import { RRule } from "rrule";
+import * as rruleNamespace from "rrule";
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
+
+type RRuleModule = typeof import("rrule");
+const rruleCompat = rruleNamespace as unknown as Partial<RRuleModule> & {
+  default?: RRuleModule;
+  rrule?: RRuleModule;
+};
+const rrulePkg = (rruleCompat.RRule ? rruleCompat : rruleCompat.default ?? rruleCompat.rrule) as RRuleModule;
+const { RRule } = rrulePkg;
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
