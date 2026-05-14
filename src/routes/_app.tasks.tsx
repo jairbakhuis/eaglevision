@@ -829,6 +829,9 @@ function TasksPage() {
               projects={projects}
               onMove={moveTaskToColumn}
               onEdit={setEditing}
+              customProperties={customProps.properties}
+              valuesByTask={customProps.valuesByTask}
+              allTasks={tasks}
             />
           )}
 
@@ -891,6 +894,9 @@ function TasksPage() {
         allTasks={tasks}
         onClose={() => setEditing(null)}
         onSave={saveTask}
+        customProperties={customProps.properties}
+        valuesByTask={customProps.valuesByTask}
+        onSetPropertyValue={customProps.setValue}
       />
 
       {/* Filter editor */}
@@ -1205,11 +1211,17 @@ function KanbanView({
   projects,
   onMove,
   onEdit,
+  customProperties,
+  valuesByTask,
+  allTasks,
 }: {
   tasks: Task[];
   projects: Project[];
   onMove: (id: string, status: string) => void;
   onEdit: (t: Task) => void;
+  customProperties: TaskProperty[];
+  valuesByTask: Map<string, Map<string, unknown>>;
+  allTasks: Task[];
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const cols = useMemo(() => {
@@ -1237,6 +1249,9 @@ function KanbanView({
                   task={t}
                   project={projects.find((p) => p.id === t.project_id) ?? null}
                   onEdit={onEdit}
+                  customProperties={customProperties}
+                  values={valuesByTask.get(t.id)}
+                  allTasks={allTasks}
                 />
               ))}
             </SortableContext>
