@@ -277,6 +277,87 @@ export type Database = {
         }
         Relationships: []
       }
+      task_properties: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          name: string
+          position: number
+          show_on_card: boolean
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          show_on_card?: boolean
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          show_on_card?: boolean
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_property_values: {
+        Row: {
+          created_at: string
+          id: string
+          property_id: string
+          task_id: string
+          updated_at: string
+          user_id: string
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          property_id: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          property_id?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_property_values_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "task_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_property_values_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           completed_at: string | null
