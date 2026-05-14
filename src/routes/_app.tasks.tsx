@@ -1362,12 +1362,18 @@ function TaskEditor({
   allTasks,
   onClose,
   onSave,
+  customProperties,
+  valuesByTask,
+  onSetPropertyValue,
 }: {
   task: Task | null;
   projects: Project[];
   allTasks: Task[];
   onClose: () => void;
   onSave: (t: Task) => void;
+  customProperties: TaskProperty[];
+  valuesByTask: Map<string, Map<string, unknown>>;
+  onSetPropertyValue: (taskId: string, propertyId: string, value: unknown) => void;
 }) {
   const [draft, setDraft] = useState<Task | null>(task);
   useEffect(() => setDraft(task), [task]);
