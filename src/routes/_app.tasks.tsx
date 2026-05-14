@@ -163,6 +163,9 @@ function TasksPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const quickAddRef = useRef<HTMLInputElement>(null);
 
+  // Notion-style custom properties (workspace-wide)
+  const customProps = useCustomProperties(userId);
+
   // Live preview of what natural-language quick-add will produce
   const parsedPreview = useMemo(
     () => (quickAdd.trim() ? parseTask(quickAdd) : null),
@@ -718,6 +721,12 @@ function TasksPage() {
               >
                 {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
+              <PropertiesManagerButton
+                properties={customProps.properties}
+                onCreate={customProps.createProperty}
+                onUpdate={customProps.updateProperty}
+                onDelete={customProps.deleteProperty}
+              />
               <button
                 onClick={() => quickAddRef.current?.focus()}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:opacity-90"
