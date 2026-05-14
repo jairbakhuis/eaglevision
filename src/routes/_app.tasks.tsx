@@ -1305,10 +1305,16 @@ function KanbanCard({
   task,
   project,
   onEdit,
+  customProperties,
+  values,
+  allTasks,
 }: {
   task: Task;
   project: Project | null;
   onEdit: (t: Task) => void;
+  customProperties: TaskProperty[];
+  values: Map<string, unknown> | undefined;
+  allTasks: Task[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -1340,6 +1346,11 @@ function KanbanCard({
         {task.priority < 4 && (
           <Flag className={cn("h-3 w-3", PRIORITY_COLORS[task.priority])} />
         )}
+        <PropertyChips
+          properties={customProperties}
+          values={values}
+          allTasks={allTasks}
+        />
       </div>
     </div>
   );
