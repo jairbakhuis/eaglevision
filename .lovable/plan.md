@@ -1,116 +1,56 @@
-## What we're building (in order)
+# Notion-style custom properties for tasks
 
-You picked four areas. I checked the code: `_app.calendar.tsx` is only **7 lines — a stub**, not a polish job. So calendar is a real build, not a tweak. Re-ordered accordingly.
+Add a workspace-wide property system. Users define properties once (Text, Number, Select, Multi-select, Date, Checkbox, URL, Formula, Relation), then every task can fill them in. Values appear inline on Kanban cards and are fully editable in the task detail panel.
 
----
+## Scope (v1)
 
-### 1. Saved filters & custom views  *(primary focus)*
+- **Global** properties — one shared schema across all tasks/projects
+- **Types shipped now:** Text, Number, Select, Multi-select, Date, Checkbox, URL
+- **Types shipped as v1.1 stubs:** Formula (read-only computed expression), Relation (link to another task). These will appear in the type picker but with a "Beta" tag — basic implementations, more polish later.
+- **Display:** task detail panel (full edit) + chip preview on Kanban cards (configurable per property: "show on card" toggle)
 
-Todoist's killer feature: type a query, save it, pin it in the sidebar.
+## Database
 
-**New table** `filters`: `id, user_id, name, query, icon, color, position, created_at`. RLS = own-only.
+New tables:
 
-**Query language** (start small, extend later):
+```text
+task_properties              -- the schema definitions
+  id, user_id, name, type, position
+  config jsonb               -- type-specific: select options, formula expr, relation target
+  show_on_card boolean
+  created_at, updated_at
+
+task_property_values         -- per-task values
+  id, user_id, task_id, property_id
+  value jsonb                -- shape depends on type
+  created_at, updated_at
+  unique(task_id, property_id)
 ```
-today              — due today or overdue
-overdue
-upcoming           — due in next 7 days
-no date
-inbox
-p1 / p2 / p3 / p4
-#projectname
-@label
-done
-&  (and)   |  (or)   !  (not)
-```
-Examples:
-- `today & p1`
-- `overdue | (today & #work)`
-- `@home & !done`
-- `7 days & #personal`
 
-Parser: tokenize → recursive-descent → returns a predicate `(task, projects) => boolean`. Pure JS, ~150 LOC.
+Both with RLS scoped to `auth.uid() = user_id`.
 
-**UI**:
-- Sidebar gets a **Filters** section under Projects. `+` button → dialog with name, icon, color, query input with **live preview** count + first 5 matching tasks.
-- Click filter → `setFilter({ kind: "saved", id })` rendering filtered tasks.
-- Right-click → Edit / Delete / Reorder (drag).
-- Add 3 starter filters seeded on first visit: **Today + P1**, **Overdue**, **No date**.
+`config` examples:
+- select / multi_select: `{ options: [{ id, label, color }] }`
+- formula: `{ expression: "priority * 2" }` (safe sandboxed eval)
+- relation: `{ target: "task" }` (only tasks for now)
 
----
+## UI
 
-### 2. Calendar — real build (stub today)
-
-The existing `_app.calendar.tsx` has 7 lines. Build:
-- **Month / Week / Day** view toggle.
-- Renders all tasks with `due_date`, color-coded by project.
-- **Drag a task** to a new day/time → updates `due_date` (uses `dnd-kit` already installed).
-- Click empty day → quick-add task pre-filled with that date.
-- Click task → opens existing TaskEditor.
-- Recurring tasks show 🔁 badge; show only the next occurrence (don't fan out the whole rrule yet).
-- Today highlighted, week starts Monday (matches existing `isThisWeek` config).
-
-Library: build with native CSS grid + date-fns (already installed). No heavy calendar library needed for v1.
-
----
-
-### 3. Documents & Notes upgrades
-
-**Notes (328 LOC currently — basic markdown)**
-- Full-text search across title + content (already have `search tsvector` column — just wire it up with `to_tsquery`).
-- Tag chips with click-to-filter.
-- "Send to chat as context" button → opens chat with note pre-loaded as system context.
-
-**Documents (388 LOC, basic page tree)**
-- **Slash menu** (`/`) for inserting blocks: H1, H2, bullet, checkbox, code, divider, quote.
-- **Markdown shortcuts** while typing: `# `, `## `, `- `, `[] `, `> `, ``` ``` `.
-- **Drag-to-reorder** pages in the tree (dnd-kit).
-- "Ask AI about this page" inline button → opens chat with page as context.
-- Export current page as Markdown (one-click download).
-
-(Skipping image uploads, embeds, backlinks, cover images for v1 — bigger lift, push to a later round.)
-
----
-
-### 4. Chat upgrades
-
-- **Streaming response polish**: typewriter cursor, stop button, regenerate.
-- **Image attach** for vision models (Gemini 2.5 Flash, GPT-5) — uploads to Supabase storage, sent as `image_url` content part.
-- **Conversation search** in left rail (matches title + first message).
-- **Per-conversation system prompt** editor (column already exists).
-- **Edit & resend** a previous user message — truncates conversation at that point.
-
----
-
-## Build order across messages
-
-To keep each iteration shippable and reviewable:
-
-1. **Filters** (table + parser + sidebar UI + dialog) — one build.
-2. **Calendar** Month + Week views with drag-to-reschedule — one build.
-3. **Calendar** Day view + click-to-create + recurring badge — small follow-up.
-4. **Notes** search + chat-context button — one build.
-5. **Documents** slash menu + markdown shortcuts + drag pages — one build.
-6. **Documents** "ask AI" + export — small follow-up.
-7. **Chat** streaming polish + edit/resend + search — one build.
-8. **Chat** image attachments — one build (needs storage bucket).
-
-You don't have to commit to all 8 — we can stop after any step.
-
----
+1. **"Properties" manager** — new button in the tasks header opens a sheet listing all properties. Add / rename / reorder / delete / toggle "show on card". For Select types, manage options inline (label + color swatch).
+2. **Task detail dialog** — adds a "Properties" section under description. Each property renders the right input (text field, number, color-tagged select, calendar, checkbox, URL, etc.).
+3. **Kanban card** — properties marked `show_on_card` render as compact chips below the title (select chips colored, dates as `MMM d`, checkbox as ✓, etc.).
 
 ## Technical notes
 
-- Filter parser lives in `src/lib/filterQuery.ts`, returns `(task, projects, allTasks) => boolean` plus a `tokenize()` helper for the live-preview chips.
-- Calendar uses CSS grid, no extra deps.
-- Slash menu uses existing `cmdk` (`@/components/ui/command`).
-- Image upload needs a new `chat-images` storage bucket with user-folder RLS.
-- All new server logic stays in the existing `chat` edge function or direct Supabase calls (no new edge functions for steps 1–7).
+- All reads/writes go through the existing browser Supabase client (matches current pattern in `_app.tasks.tsx`); no new server functions needed.
+- Property values stored as `jsonb` keeps schema flexible without per-type tables.
+- Formula evaluator: tiny safe expression parser limited to numeric ops + reference to other property names. No arbitrary JS.
+- Relation v1: stores an array of task IDs, renders as linked chips. No back-references yet.
 
----
+## Out of scope (backlog)
 
-## What I'm starting with
-
-**Step 1: Saved filters & custom views** — biggest power-user payoff and unblocks better Today/Overdue muscle memory.
-
-Reply "go" (or pick a different starting step) and I'll implement.
+- Per-project property scoping
+- People / Email / Phone types
+- Showing properties as columns in List view (you chose detail-panel + cards only)
+- Filtering/sorting by custom properties
+- Formula references across relations

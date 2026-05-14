@@ -71,6 +71,13 @@ import { parseTask, nextOccurrence } from "@/lib/taskParser";
 import * as rruleNamespace from "rrule";
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
+import {
+  PropertiesManagerButton,
+  PropertyChips,
+  TaskPropertiesSection,
+  useCustomProperties,
+  type TaskProperty,
+} from "@/components/tasks/CustomProperties";
 
 type RRuleModule = typeof import("rrule");
 const rruleCompat = rruleNamespace as unknown as Partial<RRuleModule> & {
@@ -155,6 +162,9 @@ function TasksPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const quickAddRef = useRef<HTMLInputElement>(null);
+
+  // Notion-style custom properties (workspace-wide)
+  const customProps = useCustomProperties(userId);
 
   // Live preview of what natural-language quick-add will produce
   const parsedPreview = useMemo(
@@ -711,6 +721,12 @@ function TasksPage() {
               >
                 {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
+              <PropertiesManagerButton
+                properties={customProps.properties}
+                onCreate={customProps.createProperty}
+                onUpdate={customProps.updateProperty}
+                onDelete={customProps.deleteProperty}
+              />
               <button
                 onClick={() => quickAddRef.current?.focus()}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:opacity-90"
@@ -813,6 +829,9 @@ function TasksPage() {
               projects={projects}
               onMove={moveTaskToColumn}
               onEdit={setEditing}
+              customProperties={customProps.properties}
+              valuesByTask={customProps.valuesByTask}
+              allTasks={tasks}
             />
           )}
 
@@ -875,6 +894,9 @@ function TasksPage() {
         allTasks={tasks}
         onClose={() => setEditing(null)}
         onSave={saveTask}
+        customProperties={customProps.properties}
+        valuesByTask={customProps.valuesByTask}
+        onSetPropertyValue={customProps.setValue}
       />
 
       {/* Filter editor */}
@@ -1189,11 +1211,17 @@ function KanbanView({
   projects,
   onMove,
   onEdit,
+  customProperties,
+  valuesByTask,
+  allTasks,
 }: {
   tasks: Task[];
   projects: Project[];
   onMove: (id: string, status: string) => void;
   onEdit: (t: Task) => void;
+  customProperties: TaskProperty[];
+  valuesByTask: Map<string, Map<string, unknown>>;
+  allTasks: Task[];
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const cols = useMemo(() => {
@@ -1221,6 +1249,9 @@ function KanbanView({
                   task={t}
                   project={projects.find((p) => p.id === t.project_id) ?? null}
                   onEdit={onEdit}
+                  customProperties={customProperties}
+                  values={valuesByTask.get(t.id)}
+                  allTasks={allTasks}
                 />
               ))}
             </SortableContext>
@@ -1274,10 +1305,16 @@ function KanbanCard({
   task,
   project,
   onEdit,
+  customProperties,
+  values,
+  allTasks,
 }: {
   task: Task;
   project: Project | null;
   onEdit: (t: Task) => void;
+  customProperties: TaskProperty[];
+  values: Map<string, unknown> | undefined;
+  allTasks: Task[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -1309,6 +1346,11 @@ function KanbanCard({
         {task.priority < 4 && (
           <Flag className={cn("h-3 w-3", PRIORITY_COLORS[task.priority])} />
         )}
+        <PropertyChips
+          properties={customProperties}
+          values={values}
+          allTasks={allTasks}
+        />
       </div>
     </div>
   );
@@ -1320,12 +1362,18 @@ function TaskEditor({
   allTasks,
   onClose,
   onSave,
+  customProperties,
+  valuesByTask,
+  onSetPropertyValue,
 }: {
   task: Task | null;
   projects: Project[];
   allTasks: Task[];
   onClose: () => void;
   onSave: (t: Task) => void;
+  customProperties: TaskProperty[];
+  valuesByTask: Map<string, Map<string, unknown>>;
+  onSetPropertyValue: (taskId: string, propertyId: string, value: unknown) => void;
 }) {
   const [draft, setDraft] = useState<Task | null>(task);
   useEffect(() => setDraft(task), [task]);
@@ -1469,6 +1517,13 @@ function TaskEditor({
           <RecurrenceField
             value={draft.rrule ?? null}
             onChange={(v) => setDraft({ ...draft, rrule: v })}
+          />
+          <TaskPropertiesSection
+            taskId={draft.id}
+            properties={customProperties}
+            valuesByTask={valuesByTask}
+            onSetValue={onSetPropertyValue}
+            allTasks={allTasks.map((t) => ({ id: t.id, title: t.title }))}
           />
         </div>
         <DialogFooter>
