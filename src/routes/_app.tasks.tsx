@@ -768,6 +768,12 @@ function TasksPage() {
               <h1 className="text-3xl font-bold tracking-tight">{filterTitle}</h1>
               <Badge variant="secondary">{filtered.length}</Badge>
             </div>
+            <PropertiesManagerButton
+              properties={customProps.properties}
+              onCreate={customProps.createProperty}
+              onUpdate={customProps.updateProperty}
+              onDelete={customProps.deleteProperty}
+            />
           </div>
 
           {/* Quick add */}
