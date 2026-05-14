@@ -71,6 +71,13 @@ import { parseTask, nextOccurrence } from "@/lib/taskParser";
 import * as rruleNamespace from "rrule";
 import { compileFilter, validateQuery, describeQuery } from "@/lib/filterQuery";
 import { Filter as FilterIcon, Pencil, Eye, EyeOff } from "lucide-react";
+import {
+  PropertiesManagerButton,
+  PropertyChips,
+  TaskPropertiesSection,
+  useCustomProperties,
+  type TaskProperty,
+} from "@/components/tasks/CustomProperties";
 
 type RRuleModule = typeof import("rrule");
 const rruleCompat = rruleNamespace as unknown as Partial<RRuleModule> & {
