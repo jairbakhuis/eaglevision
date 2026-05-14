@@ -1518,6 +1518,13 @@ function TaskEditor({
             value={draft.rrule ?? null}
             onChange={(v) => setDraft({ ...draft, rrule: v })}
           />
+          <TaskPropertiesSection
+            taskId={draft.id}
+            properties={customProperties}
+            valuesByTask={valuesByTask}
+            onSetValue={onSetPropertyValue}
+            allTasks={allTasks.map((t) => ({ id: t.id, title: t.title }))}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
