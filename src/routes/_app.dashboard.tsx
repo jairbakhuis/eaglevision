@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 const BOOT_LINES = [
   "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
-  "EAGLEVISION OS  v3.14.159  ── © 2287 VAULT-TEC",
+  "J.P.A. OS  v3.14.159  ── © 2287 VAULT-TEC",
   "INITIALIZING SUBSYSTEMS............. [OK]",
   "MOUNTING /home/operator............. [OK]",
   "LOADING PERSONAL ASSISTANT MATRIX... [OK]",
@@ -76,7 +76,7 @@ function DashboardPage() {
         <header className="term-topbar">
           <div className="flex items-center gap-2">
             <span className="term-dot" />
-            <span>VAULT-TEC // EAGLEVISION TERMINAL</span>
+            <span>VAULT-TEC // J.P.A. OS TERMINAL</span>
           </div>
           <div className="hidden md:flex items-center gap-4 text-[11px]">
             <span><Wifi className="inline h-3 w-3 mr-1" /> UPLINK 100%</span>

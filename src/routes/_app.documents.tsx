@@ -385,5 +385,5 @@ function PageNode({
 
 export const Route = createFileRoute("/_app/documents")({
   component: DocumentsPage,
-  head: () => ({ meta: [{ title: "Documents — EagleVision" }] }),
+  head: () => ({ meta: [{ title: "Documents — J.P.A. OS" }] }),
 });
