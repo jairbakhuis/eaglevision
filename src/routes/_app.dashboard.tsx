@@ -96,10 +96,6 @@ function DashboardPage() {
             className="term-banner-logo"
             style={{ imageRendering: "pixelated" }}
           />
-          <pre className="term-ascii">{`
-      ▒█ █▀█ ▄▀█   ▒█▀█ ▒█▀ 
-   ▄█ █▄█ █▀█    █▄█  ▄▄▄ 
-`}</pre>
           <div className="term-banner-meta">
             <div className="term-banner-title">J.P.A. OS</div>
             <div className="term-banner-sub">PERSONAL ASSISTANT TERMINAL ── v3.14.159</div>
