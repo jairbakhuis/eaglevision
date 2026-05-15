@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  TerminalSquare,
   MessageSquare,
   CheckSquare,
   Calendar as CalendarIcon,
@@ -9,9 +10,9 @@ import {
 import { cn } from "@/lib/utils";
 
 const tabs = [
+  { title: "Home", url: "/dashboard", icon: TerminalSquare },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
-  { title: "Calendar", url: "/calendar", icon: CalendarIcon },
   { title: "Notes", url: "/notes", icon: StickyNote },
   { title: "More", url: "/settings", icon: MoreHorizontal },
 ];
