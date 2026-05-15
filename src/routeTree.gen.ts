@@ -16,6 +16,7 @@ import { Route as AppTasksRouteImport } from './routes/_app.tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppNotesRouteImport } from './routes/_app.notes'
 import { Route as AppDocumentsRouteImport } from './routes/_app.documents'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCreditsRouteImport } from './routes/_app.credits'
 import { Route as AppChatRouteImport } from './routes/_app.chat'
 import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
@@ -54,6 +55,11 @@ const AppDocumentsRoute = AppDocumentsRouteImport.update({
   path: '/documents',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCreditsRoute = AppCreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AppCalendarRoute
   '/chat': typeof AppChatRoute
   '/credits': typeof AppCreditsRoute
+  '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/notes': typeof AppNotesRoute
   '/settings': typeof AppSettingsRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AppCalendarRoute
   '/chat': typeof AppChatRoute
   '/credits': typeof AppCreditsRoute
+  '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/notes': typeof AppNotesRoute
   '/settings': typeof AppSettingsRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/_app/calendar': typeof AppCalendarRoute
   '/_app/chat': typeof AppChatRoute
   '/_app/credits': typeof AppCreditsRoute
+  '/_app/dashboard': typeof AppDashboardRoute
   '/_app/documents': typeof AppDocumentsRoute
   '/_app/notes': typeof AppNotesRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/chat'
     | '/credits'
+    | '/dashboard'
     | '/documents'
     | '/notes'
     | '/settings'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/chat'
     | '/credits'
+    | '/dashboard'
     | '/documents'
     | '/notes'
     | '/settings'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/_app/calendar'
     | '/_app/chat'
     | '/_app/credits'
+    | '/_app/dashboard'
     | '/_app/documents'
     | '/_app/notes'
     | '/_app/settings'
@@ -199,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDocumentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/credits': {
       id: '/_app/credits'
       path: '/credits'
@@ -227,6 +246,7 @@ interface AppRouteChildren {
   AppCalendarRoute: typeof AppCalendarRoute
   AppChatRoute: typeof AppChatRoute
   AppCreditsRoute: typeof AppCreditsRoute
+  AppDashboardRoute: typeof AppDashboardRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppNotesRoute: typeof AppNotesRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -237,6 +257,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCalendarRoute: AppCalendarRoute,
   AppChatRoute: AppChatRoute,
   AppCreditsRoute: AppCreditsRoute,
+  AppDashboardRoute: AppDashboardRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppNotesRoute: AppNotesRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -253,3 +274,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
