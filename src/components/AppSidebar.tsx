@@ -7,9 +7,9 @@ import {
   FileText,
   Coins,
   Settings as SettingsIcon,
-  Sparkles,
   TerminalSquare,
 } from "lucide-react";
+import logoUrl from "@/assets/jpa-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -47,13 +47,16 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </div>
+          <img
+            src={logoUrl}
+            alt="J.P.A. OS"
+            className="h-8 w-8 object-contain"
+            style={{ imageRendering: "pixelated", filter: "drop-shadow(0 0 6px rgba(78,245,138,0.6))" }}
+          />
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight">EagleVision</span>
-              <span className="text-xs text-muted-foreground">AI hub</span>
+              <span className="text-sm font-semibold tracking-[0.18em]">J.P.A. OS</span>
+              <span className="text-[10px] text-muted-foreground tracking-widest">TERMINAL v1.0</span>
             </div>
           )}
         </div>
