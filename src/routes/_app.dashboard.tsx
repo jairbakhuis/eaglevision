@@ -482,6 +482,46 @@ const TERMINAL_CSS = `
   .term-ascii { font-size: 6px; }
 }
 
+.term-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--term-grid);
+  background: linear-gradient(180deg, rgba(78,245,138,0.06), transparent);
+  position: relative;
+}
+.term-banner::before, .term-banner::after {
+  content: ""; position: absolute; width: 10px; height: 10px;
+  border: 1px solid var(--term-fg);
+}
+.term-banner::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.term-banner::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.term-banner-logo {
+  width: 64px; height: 64px;
+  filter: drop-shadow(0 0 10px rgba(78,245,138,0.7));
+  flex-shrink: 0;
+}
+.term-banner-meta { margin-left: auto; text-align: right; }
+.term-banner-title {
+  font-size: 28px;
+  letter-spacing: 0.32em;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(78,245,138,0.7);
+}
+.term-banner-sub {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--term-fg-dim);
+  margin-top: 4px;
+}
+@media (max-width: 640px) {
+  .term-banner { gap: 10px; padding: 10px 12px; }
+  .term-banner-logo { width: 44px; height: 44px; }
+  .term-banner-title { font-size: 18px; letter-spacing: 0.24em; }
+  .term-banner-sub { font-size: 9px; }
+}
+
 .term-panel {
   position: relative;
   border: 1px solid var(--term-grid);
