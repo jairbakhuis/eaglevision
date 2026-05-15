@@ -89,7 +89,7 @@ const { RRule } = rrulePkg;
 
 export const Route = createFileRoute("/_app/tasks")({
   component: TasksPage,
-  head: () => ({ meta: [{ title: "Tasks — EagleVision" }] }),
+  head: () => ({ meta: [{ title: "Tasks — J.P.A. OS" }] }),
 });
 
 type Project = {

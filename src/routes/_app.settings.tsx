@@ -6,7 +6,7 @@ import { Coins, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsPage,
-  head: () => ({ meta: [{ title: "Settings — EagleVision" }] }),
+  head: () => ({ meta: [{ title: "Settings — J.P.A. OS" }] }),
 });
 
 function SettingsPage() {
