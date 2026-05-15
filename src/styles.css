@@ -4,20 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -61,77 +47,43 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(0.995 0.002 90);
-  --foreground: oklch(0.18 0.01 60);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 60);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 60);
-  --primary: oklch(0.55 0.18 35);
-  --primary-foreground: oklch(0.99 0.005 90);
-  --primary-glow: oklch(0.7 0.2 40);
-  --secondary: oklch(0.96 0.01 80);
-  --secondary-foreground: oklch(0.25 0.02 60);
-  --muted: oklch(0.96 0.008 80);
-  --muted-foreground: oklch(0.5 0.015 60);
-  --accent: oklch(0.93 0.025 80);
-  --accent-foreground: oklch(0.25 0.02 60);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.92 0.008 80);
-  --input: oklch(0.92 0.008 80);
-  --ring: oklch(0.55 0.18 35);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.97 0.008 80);
-  --sidebar-foreground: oklch(0.25 0.015 60);
-  --sidebar-primary: oklch(0.55 0.18 35);
-  --sidebar-primary-foreground: oklch(0.99 0.005 90);
-  --sidebar-accent: oklch(0.93 0.02 80);
-  --sidebar-accent-foreground: oklch(0.25 0.02 60);
-  --sidebar-border: oklch(0.9 0.01 80);
-  --sidebar-ring: oklch(0.55 0.18 35);
-}
-
-.dark {
-  --background: oklch(0.16 0.008 60);
-  --foreground: oklch(0.96 0.005 80);
-  --card: oklch(0.2 0.01 60);
-  --card-foreground: oklch(0.96 0.005 80);
-  --popover: oklch(0.2 0.01 60);
-  --popover-foreground: oklch(0.96 0.005 80);
-  --primary: oklch(0.7 0.18 40);
-  --primary-foreground: oklch(0.16 0.008 60);
-  --primary-glow: oklch(0.78 0.2 50);
-  --secondary: oklch(0.25 0.012 60);
-  --secondary-foreground: oklch(0.96 0.005 80);
-  --muted: oklch(0.24 0.01 60);
-  --muted-foreground: oklch(0.65 0.015 70);
-  --accent: oklch(0.28 0.02 60);
-  --accent-foreground: oklch(0.96 0.005 80);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.7 0.18 40);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.18 0.01 60);
-  --sidebar-foreground: oklch(0.92 0.005 80);
-  --sidebar-primary: oklch(0.7 0.18 40);
-  --sidebar-primary-foreground: oklch(0.16 0.008 60);
-  --sidebar-accent: oklch(0.24 0.012 60);
-  --sidebar-accent-foreground: oklch(0.96 0.005 80);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.7 0.18 40);
+/* Terminal / CRT theme — green phosphor on deep vault black.
+   Both :root and .dark use the same palette so the look is uniform. */
+:root, .dark {
+  --radius: 0rem;
+  --background: oklch(0.15 0.04 155);
+  --foreground: oklch(0.9 0.22 150);
+  --card: oklch(0.18 0.05 155);
+  --card-foreground: oklch(0.9 0.22 150);
+  --popover: oklch(0.17 0.05 155);
+  --popover-foreground: oklch(0.9 0.22 150);
+  --primary: oklch(0.88 0.24 150);
+  --primary-foreground: oklch(0.13 0.04 155);
+  --primary-glow: oklch(0.95 0.24 150);
+  --secondary: oklch(0.23 0.06 155);
+  --secondary-foreground: oklch(0.9 0.22 150);
+  --muted: oklch(0.21 0.05 155);
+  --muted-foreground: oklch(0.62 0.18 150);
+  --accent: oklch(0.28 0.08 150);
+  --accent-foreground: oklch(0.95 0.23 150);
+  --destructive: oklch(0.8 0.2 55);
+  --destructive-foreground: oklch(0.13 0.04 155);
+  --border: oklch(0.55 0.18 150 / 30%);
+  --input: oklch(0.55 0.18 150 / 22%);
+  --ring: oklch(0.88 0.24 150);
+  --chart-1: oklch(0.88 0.24 150);
+  --chart-2: oklch(0.8 0.2 55);
+  --chart-3: oklch(0.7 0.18 200);
+  --chart-4: oklch(0.75 0.2 100);
+  --chart-5: oklch(0.65 0.2 320);
+  --sidebar: oklch(0.11 0.03 155);
+  --sidebar-foreground: oklch(0.85 0.22 150);
+  --sidebar-primary: oklch(0.88 0.24 150);
+  --sidebar-primary-foreground: oklch(0.13 0.04 155);
+  --sidebar-accent: oklch(0.21 0.05 155);
+  --sidebar-accent-foreground: oklch(0.95 0.23 150);
+  --sidebar-border: oklch(0.55 0.18 150 / 25%);
+  --sidebar-ring: oklch(0.88 0.24 150);
 }
 
 @layer base {
@@ -147,30 +99,93 @@
     -webkit-text-size-adjust: 100%;
     overscroll-behavior-y: none;
     text-rendering: optimizeLegibility;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-variant-ligatures: none;
+    letter-spacing: 0.01em;
+    text-shadow: 0 0 1px rgba(120, 255, 170, 0.35), 0 0 8px rgba(120, 255, 170, 0.08);
+    background-image:
+      radial-gradient(ellipse at top, oklch(0.22 0.07 155) 0%, oklch(0.13 0.04 155) 55%, oklch(0.06 0.02 155) 100%);
+    background-attachment: fixed;
   }
 
   html, body {
-    /* Prevent rubber-band scroll on iOS */
     overscroll-behavior: none;
   }
 
-  /* iOS-style momentum scrolling */
   .ios-scroll {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Disable iOS double-tap zoom on interactive elements */
   button, a, [role="button"], input, textarea, select {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
-  /* Inputs: prevent iOS auto-zoom (font-size must be >= 16px) */
   @media (max-width: 768px) {
     input, textarea, select {
       font-size: 16px;
     }
   }
+
+  /* Global CRT scanlines + flicker overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0.2) 3px,
+      rgba(0, 0, 0, 0) 4px
+    );
+    mix-blend-mode: multiply;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+    animation: crtFlicker 5s infinite;
+  }
+  @keyframes crtFlicker {
+    0%, 100% { opacity: 1; }
+    47% { opacity: 0.94; }
+    48% { opacity: 1; }
+    72% { opacity: 0.88; }
+    73% { opacity: 1; }
+  }
+
+  /* Sharp corners everywhere — terminal aesthetic */
+  *, *::before, *::after {
+    border-radius: 0 !important;
+  }
+
+  /* Headings — uppercase + glow */
+  h1, h2, h3, h4, h5, h6 {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 6px rgba(120, 255, 170, 0.4);
+  }
+
+  /* Selection */
+  ::selection {
+    background: oklch(0.88 0.24 150 / 35%);
+    color: oklch(0.98 0.22 150);
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: oklch(0.1 0.03 155); }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.55 0.18 150 / 40%);
+    border: 1px solid oklch(0.88 0.24 150 / 30%);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(0.7 0.2 150 / 60%); }
 }
 
 /* Safe-area helpers for iOS notch / home indicator */
