@@ -8,6 +8,7 @@ import {
   Coins,
   Settings as SettingsIcon,
   Sparkles,
+  TerminalSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
+  { title: "Dashboard", url: "/dashboard", icon: TerminalSquare },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
